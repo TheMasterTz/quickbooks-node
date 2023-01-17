@@ -1,83 +1,108 @@
-import path from 'node:path';
-import util from 'node:util';
-import fs from 'node:fs/promises';
+import axios, { AxiosInstance } from "axios";
+import fs from "fs/promises";
+import * as AxiosLogger from "axios-logger";
+import path from "path";
+import sqlstring from "sqlstring";
+import util from "util";
 
-import axios from 'axios';
-import sqlstring from 'sqlstring';
-import * as AxiosLogger from 'axios-logger';
-import {
-  cloneDeep,
-  isBoolean,
-  isNil,
-  isNumber,
-  isString,
-  isUndefined,
-  inRange,
-  omitBy,
-  isArray,
-  transform,
-  isObject,
-  find,
-  findIndex,
-  upperFirst,
-} from 'lodash-es';
+import { cloneDeep, findIndex, isArray, isNil, isObject, isUndefined, omitBy, transform, find, upperFirst } from "lodash";
+import { QuickbooksConfig, entityType, optionsType } from "./types/quickbooks.types";
 
-const packageJson = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url)));
+let packageJson = {} as any;
 
-class QuickBooksAccountingClient {
-  #accessToken;
-  #realmId;
-  #minorVersion = 65;
-  #useSandbox = process.env.NODE_ENV === 'production' ? false : true;
-  #debug = process.env.NODE_ENV === 'production' ? false : true;
-  #axios;
+const packageJsonData = async () => {
+  const data = await fs.readFile(new URL("../package.json", import.meta.url)) as any;
+  packageJson = JSON.parse(data);
+};
+packageJsonData();
 
-  static BASE_URL_PRODUCTION = 'https://quickbooks.api.intuit.com';
-  static BASE_URL_SANDBOX = 'https://sandbox-quickbooks.api.intuit.com';
-  static QUERY_OPERATORS = ['=', 'IN', '<', '>', '<=', '>=', 'LIKE'];
 
-  /**
-   * Create QuickBooksAccountingClient instance
-   * @param {Object} config
-   * @param {String} config.accessToken
-   * @param {String} config.realmId
-   * @param {Number=} config.minorVersion
-   * @param {Boolean=} config.useSandbox
-   * @param {Boolean=} config.debug
-   */
-  constructor(config = {}) {
-    this.#accessToken = config.accessToken;
-    this.#realmId = config.realmId;
-    if (!isNil(config.minorVersion)) this.#minorVersion = config.minorVersion;
-    if (!isNil(config.useSandbox)) this.#useSandbox = config.useSandbox;
-    if (!isNil(config.debug)) this.#debug = config.debug;
+export class Quickbooks implements QuickbooksConfig {
+  accessToken: string;
+  refreshToken: string;
+  realmId: string;
+  minorVersion?: string | number | null | undefined;
+  useSandbox?: boolean | undefined;
+  debug?: boolean | undefined;
+  axios: AxiosInstance;
 
-    if (!this.#accessToken) throw new Error('accessToken not defined');
-    if (!this.#realmId) throw new Error('realmId not defined');
-    if (!isString(this.#accessToken)) throw new Error('invalid value: accessToken');
-    if (!isString(this.#realmId)) throw new Error('invalid value: realmId');
-    if (!isNumber(this.#minorVersion) || !inRange(this.#minorVersion, 0, 66))
-      throw new Error('invalid value: minorVersion');
-    if (!isBoolean(this.#useSandbox)) throw new Error('invalid value: useSandbox');
-    if (!isBoolean(this.#debug)) throw new Error('invalid value: debug');
+  constructor(config: QuickbooksConfig) {
+    this.accessToken = config.accessToken;
+    this.refreshToken = config.refreshToken;
+    this.realmId = config.realmId;
+    this.minorVersion = config.minorVersion ?? this.minorVersion;
+    this.useSandbox = config.useSandbox ?? this.useSandbox;
+    this.debug = config.debug ?? this.debug;
 
-    this.#axios = axios.create({
-      baseURL: new URL(
-        '/v3/company',
-        this.#useSandbox ? QuickBooksAccountingClient.BASE_URL_SANDBOX : QuickBooksAccountingClient.BASE_URL_PRODUCTION
-      ).toString(),
-      headers: { 'user-agent': `quickbooks-node: version ${packageJson.version}` },
-      params: { minorversion: this.#minorVersion },
+    if (!this.accessToken) throw new Error("Access token is required");
+    if (!this.realmId) throw new Error("Realm ID is required");
+    if (!this.refreshToken) throw new Error("Refresh token is required");
+
+    const useSandboxUrl = this.useSandbox ?
+      "https://sandbox-quickbooks.api.intuit.com" :
+      "https://quickbooks.api.intuit.com"
+
+    this.axios = axios.create({
+      baseURL: new URL("/v3/company/", useSandboxUrl).toString(),
+      headers: {
+        "user-agent": `quickbooks-node: version ${packageJson.version}`,
+      },
+      params: { minorversion: this.minorVersion }
     });
-    if (this.#debug) {
-      let loggerConfig = { prefixText: 'QuickBooks', dateFormat: 'HH:MM:ss', headers: true, params: true };
-      this.#axios.interceptors.request.use((request) => {
+    let loggerConfig = {
+      prefixText: "QuickBooks",
+      dateFormat: "HH:MM:ss",
+      headers: true,
+      params: true,
+    };
+
+    if (this.debug) {
+      this.axios.interceptors.request.use((request) => {
         return AxiosLogger.requestLogger(request, loggerConfig);
       });
-      this.#axios.interceptors.response.use((response) => {
+
+      this.axios.interceptors.response.use((response) => {
         return AxiosLogger.responseLogger(response, loggerConfig);
       });
     }
+  }
+
+  async update(entityName: string, entity: any): Promise<object> {
+    if ((!entity.Id || !entity.SyncToken) && entityName !== "exchangerate")
+      throw new Error(
+        `${entityName} must contain Id and SyncToken fields: ${util.inspect(
+          entity,
+          {
+            showHidden: false,
+            depth: null,
+          }
+        )}`
+      );
+
+    let url = path.posix.join("/", entityName.toLowerCase());
+    let params = { operation: "update" } as any;
+    if (isNil(entity.sparse)) entity.sparse = true;
+    if (entity.void === true) {
+      if (entityName === "invoice") params.operation = "void";
+      else params.include = "void";
+    }
+    delete entity.void;
+
+    let response = await this.request(url, { method: "post", params }, entity) as any;
+    return response?.[upperFirst(entityName)] || response;
+  }
+
+  /**
+   * Delete QuickBooks record
+   * @param {String} entityName
+   * @param {Object|String} idOrEntity
+   * @returns {Promise<Object>}
+   */
+  async delete(entityName: string, idOrEntity: object | string): Promise<object> {
+    let url = path.posix.join("/", entityName.toLowerCase());
+    let params = { operation: "delete" };
+    let entity = await this.getEntity(entityName, idOrEntity) as entityType;
+    return await this.request(url, { method: "post", params }, entity);
   }
 
   /**
@@ -90,26 +115,27 @@ class QuickBooksAccountingClient {
    * @param {Object|FormData|null} entity
    * @returns {Promise<Object>}
    */
-  async #request(url, options, entity) {
-    url = path.posix.join('/', this.#realmId, url);
-    let method = options.method ?? 'get';
-    let headers = options.headers ?? {};
-    let params = options.params ?? {};
-    let responseType = 'json';
+  async request(url: string, options: optionsType, entity?: entityType): Promise<object> {
+    url = path.posix.join("/", this.realmId, url);
+    let method: string = options.method ?? "get";
+    let headers: any = options.headers ?? {};
+    let params: any = options.params ?? {};
+    let responseType: any = "json";
 
-    let defaultHeaders = {
-      authorization: `Bearer ${this.#accessToken}`,
+    let defaultHeaders: any = {
+      authorization: `Bearer ${this.accessToken}`,
     };
 
-    if (!['head', 'get'].includes(method)) defaultHeaders['content-type'] = 'application/json';
+    if (!["head", "get"].includes(method))
+      defaultHeaders["content-type"] = "application/json";
     if (url.match(/pdf$/)) {
-      defaultHeaders['accept'] = 'application/pdf';
-      responseType = 'arraybuffer';
+      defaultHeaders["accept"] = "application/pdf";
+      responseType = "arraybuffer";
     }
 
     if (entity?.allowDuplicateDocNum) {
       delete entity.allowDuplicateDocNum;
-      params.include = 'allowduplicatedocnum';
+      params.include = "allowduplicatedocnum";
     }
     if (entity?.requestId) {
       params.requestid = params.requestid || entity.requestId; // Do not override if exist
@@ -127,7 +153,7 @@ class QuickBooksAccountingClient {
       isUndefined
     );
 
-    const response = await this.#axios({
+    const response = await this.axios({
       url,
       method,
       headers: aggregatedHeaders,
@@ -148,51 +174,66 @@ class QuickBooksAccountingClient {
    * @param {Object|null} entity
    * @returns {Promise<Object>}
    */
-  async #query(entity, parameters) {
+  async query(entity: any | string, parameters: any): Promise<object> {
     if (isNil(parameters)) parameters = [];
-    if (!isObject(parameters)) throw new Error('Invalid query');
+    if (!isObject(parameters)) throw new Error("Invalid query");
     parameters = cloneDeep(parameters); // Create a deep copy of parameters
     if (!isArray(parameters))
       parameters = transform(
         parameters,
-        (acc, value, key) => acc.push({ field: key, value, operator: isArray(value) ? 'IN' : '=' }),
+        (acc, value, key) =>
+          acc.push({
+            field: key,
+            value,
+            operator: isArray(value) ? "IN" : "=",
+          } as never),
         []
       );
     else {
-      parameters = parameters.map(({ field, value, operator }) => ({ field, value, operator: operator || '=' }));
+      parameters = parameters.map(({ field, value, operator }) => ({
+        field,
+        value,
+        operator: operator || "=",
+      }));
     }
 
-    let countIndex = findIndex(parameters, { field: 'count', value: true });
+    let countIndex = findIndex(parameters, { field: "count", value: true });
     let count = countIndex !== -1 ? true : false;
     if (count) parameters.splice(countIndex, 1);
 
-    let query = `${count ? 'select count(*) from' : 'select * from'} ${entity}`;
+    let query = `${count ? "select count(*) from" : "select * from"} ${entity}`;
 
-    let limitParams = find(parameters, ['field', 'limit']);
-    let offsetParams = find(parameters, ['field', 'offset']);
-    if (!limitParams) parameters.push({ field: 'limit', value: 1000 });
-    if (!offsetParams) parameters.push({ field: 'offset', value: 1 });
-    let fetchAll = Boolean(find(parameters, { field: 'fetchAll', value: true }));
+    let limitParams = find(parameters, ["field", "limit"]);
+    let offsetParams = find(parameters, ["field", "offset"]);
+    if (!limitParams) parameters.push({ field: "limit", value: 1000 });
+    if (!offsetParams) parameters.push({ field: "offset", value: 1 });
+    let fetchAll = Boolean(
+      find(parameters, { field: "fetchAll", value: true })
+    );
 
-    query += this.#parseQueryParams(parameters, count);
+    query += this.parseQueryParams(parameters, count);
 
-    let response = await this.#request('/query', {
-      method: 'get',
+    let response = await this.request("/query", {
+      method: "get",
       params: { query },
-    });
+    }) as any;
+
     if (fetchAll && !count) {
-      let limitObject = find(parameters, ['field', 'limit']);
-      let offsetObject = find(parameters, ['field', 'offset']);
+      let limitObject = find(parameters, ["field", "limit"]);
+      let offsetObject = find(parameters, ["field", "offset"]);
       if (response?.QueryResponse?.maxResults === limitObject.value) {
         offsetObject.value += limitObject.value;
         let responseFields = Object.keys(response.QueryResponse);
-        let entityKey = responseFields.find((value) => value.toLowerCase() === entity.toLowerCase());
-        let recursiveResponse = await this.#query(entity, parameters);
-
-        response.QueryResponse[entityKey] = response.QueryResponse[entityKey].concat(
-          recursiveResponse?.QueryResponse?.[entityKey] || []
+        let entityKey = responseFields.find(
+          (value) => value.toLowerCase() === entity.toLowerCase()
         );
-        response.QueryResponse.maxResults += recursiveResponse?.QueryResponse?.maxResults || 0;
+        let recursiveResponse = await this.query(entity, parameters) as any;
+
+        response.QueryResponse[entityKey as typeof response.QueryResponse] = response.QueryResponse[
+          entityKey as typeof response.QueryResponse
+        ].concat(recursiveResponse?.QueryResponse?.[entityKey as typeof response.QueryResponse] || []);
+        response.QueryResponse.maxResults +=
+          recursiveResponse?.QueryResponse?.maxResults || 0;
         response.time = recursiveResponse.time || response.time;
       }
     }
@@ -205,21 +246,26 @@ class QuickBooksAccountingClient {
    * @param {Boolean} count Whether it's a count query or not
    * @returns {String} Parsed query parameters
    */
-  #parseQueryParams(params, count = false) {
+  parseQueryParams(params: any, count: boolean = false): string {
     let { query, asc, desc, limit, offset } = params.reduce(
-      (result, current) => {
+      (result: { [x: string]: any; }, current: { field: any; value: any; operator: any; }) => {
         let { field, value, operator } = current;
-        if (field === 'fetchAll') return result;
-        else if (['asc', 'desc', 'limit', 'offset'].includes(field)) result[field] = value;
+        if (field === "fetchAll") return result;
+        else if (["asc", "desc", "limit", "offset"].includes(field))
+          result[field] = value;
         else {
-          result['query'] += `${result['query'] ? ' and ' : ''}${field} ${operator} ${
-            isArray(value) ? '(' + sqlstring.escape(value) + ')' : sqlstring.escape(value)
+          result["query"] += `${
+            result["query"] ? " and " : ""
+          }${field} ${operator} ${
+            isArray(value)
+              ? "(" + sqlstring.escape(value) + ")"
+              : sqlstring.escape(value)
           }`;
         }
         return result;
       },
       {
-        query: '',
+        query: "",
         asc: null,
         desc: null,
         limit: 1000,
@@ -236,16 +282,10 @@ class QuickBooksAccountingClient {
     return query;
   }
 
-  /**
-   * Get QuickBooks report
-   * @param {String} reportType Report type
-   * @param {Object=} params Query parameters
-   * @returns {Promise<Object>}
-   */
-  async #report(reportType, params) {
+  async report(reportType: string, params: object | undefined): Promise<object> {
     params = params || {};
-    let url = path.posix.join('/reports', reportType);
-    return await this.#request(url, { method: 'get', params });
+    let url = path.posix.join("/reports", reportType);
+    return await this.request(url, { method: "get", params });
   }
 
   /**
@@ -254,9 +294,9 @@ class QuickBooksAccountingClient {
    * @param {Object} entity
    * @returns {Promise<Object>}
    */
-  async #create(entityName, entity) {
-    let url = path.posix.join('/', entityName.toLowerCase());
-    let response = await this.#request(url, { method: 'post' }, entity);
+  async create(entityName: string, entity: entityType): Promise<object> {
+    let url = path.posix.join("/", entityName.toLowerCase());
+    let response = await this.request(url, {method: "post"}, entity) as any;
     return response?.[upperFirst(entityName)] || response;
   }
 
@@ -266,52 +306,13 @@ class QuickBooksAccountingClient {
    * @param {String} id
    * @returns {Promise<Object>}
    */
-  async #read(entityName, id) {
-    let url = path.posix.join('/', entityName.toLowerCase(), String(id));
-    let response = await this.#request(url, { method: 'get' });
+  async read(entityName: string, id: string): Promise<object> {
+    let url = path.posix.join("/", entityName.toLowerCase(), String(id));
+    let response = await this.request(url, {
+      method: "get",
+      params: undefined
+    }) as any;
     return response?.[upperFirst(entityName)] || response;
-  }
-
-  /**
-   * Update QuickBooks record
-   * @param {String} entityName
-   * @param {Object} entity
-   * @returns {Promise<Object>}
-   */
-  async #update(entityName, entity) {
-    if ((!entity.Id || !entity.SyncToken) && entityName !== 'exchangerate')
-      throw new Error(
-        `${entityName} must contain Id and SyncToken fields: ${util.inspect(entity, {
-          showHidden: false,
-          depth: null,
-        })}`
-      );
-
-    let url = path.posix.join('/', entityName.toLowerCase());
-    let params = { operation: 'update' };
-
-    if (isNil(entity.sparse)) entity.sparse = true;
-    if (entity.void === true) {
-      if (entityName === 'invoice') params.operation = 'void';
-      else params.include = 'void';
-    }
-    delete entity.void;
-
-    let response = await this.#request(url, { method: 'post', params }, entity);
-    return response?.[upperFirst(entityName)] || response;
-  }
-
-  /**
-   * Delete QuickBooks record
-   * @param {String} entityName
-   * @param {Object|String} idOrEntity
-   * @returns {Promise<Object>}
-   */
-  async #delete(entityName, idOrEntity) {
-    let url = path.posix.join('/', entityName.toLowerCase());
-    let params = { operation: 'delete' };
-    let entity = await this.#getEntity(entityName, idOrEntity);
-    return await this.#request(url, { method: 'post', params }, entity);
   }
 
   /**
@@ -320,17 +321,18 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity
    * @returns {Promise<Object>}
    */
-  async #getEntity(entityName, idOrEntity) {
-    if (isObject(idOrEntity)) return idOrEntity;
-    else return await this.#read(entityName, idOrEntity);
+  async getEntity(entityName: string, idOrEntity: object | string): Promise<object> {
+    if (isObject(idOrEntity))
+      return idOrEntity;
+    return await this.read(entityName, idOrEntity);
   }
 
   /**
    * Get instance's access token
    * @returns {String}
    */
-  getAccessToken() {
-    return this.#accessToken;
+  getAccessToken(): string {
+    return this.accessToken;
   }
 
   /**
@@ -338,9 +340,9 @@ class QuickBooksAccountingClient {
    * @param {String} token
    * @returns {String}
    */
-  setAccessToken(token) {
-    this.#accessToken = token;
-    return this.#accessToken;
+  setAccessToken(token: string): string {
+    this.accessToken = token;
+    return this.accessToken;
   }
 
   /** --- CODE BELOW THIS POINT IS GENERATED */
@@ -351,8 +353,8 @@ class QuickBooksAccountingClient {
    * @param {Object} accountObject - account object to be persisted in QuickBooks
    * @return {Promise<Object>} account object response
    */
-  async createAccount(accountObject) {
-    return await this.#create('account', accountObject);
+  async createAccount(accountObject: entityType): Promise<object> {
+    return await this.create("account", accountObject);
   }
 
   /**
@@ -361,8 +363,8 @@ class QuickBooksAccountingClient {
    * @param {Object} attachableObject - attachable object to be persisted in QuickBooks
    * @return {Promise<Object>} attachable object response
    */
-  async createAttachable(attachableObject) {
-    return await this.#create('attachable', attachableObject);
+  async createAttachable(attachableObject: entityType): Promise<object> {
+    return await this.create("attachable", attachableObject);
   }
 
   /**
@@ -371,8 +373,8 @@ class QuickBooksAccountingClient {
    * @param {Object} billObject - bill object to be persisted in QuickBooks
    * @return {Promise<Object>} bill object response
    */
-  async createBill(billObject) {
-    return await this.#create('bill', billObject);
+  async createBill(billObject: entityType): Promise<object> {
+    return await this.create("bill", billObject);
   }
 
   /**
@@ -381,8 +383,8 @@ class QuickBooksAccountingClient {
    * @param {Object} billPaymentObject - billPayment object to be persisted in QuickBooks
    * @return {Promise<Object>} billPayment object response
    */
-  async createBillPayment(billPaymentObject) {
-    return await this.#create('billPayment', billPaymentObject);
+  async createBillPayment(billPaymentObject: entityType): Promise<object> {
+    return await this.create("billPayment", billPaymentObject);
   }
 
   /**
@@ -391,8 +393,8 @@ class QuickBooksAccountingClient {
    * @param {Object} classObject - class object to be persisted in QuickBooks
    * @return {Promise<Object>} class object response
    */
-  async createClass(classObject) {
-    return await this.#create('class', classObject);
+  async createClass(classObject: entityType): Promise<object> {
+    return await this.create("class", classObject);
   }
 
   /**
@@ -401,8 +403,8 @@ class QuickBooksAccountingClient {
    * @param {Object} creditMemoObject - creditMemo object to be persisted in QuickBooks
    * @return {Promise<Object>} creditMemo object response
    */
-  async createCreditMemo(creditMemoObject) {
-    return await this.#create('creditMemo', creditMemoObject);
+  async createCreditMemo(creditMemoObject: entityType): Promise<object> {
+    return await this.create("creditMemo", creditMemoObject);
   }
 
   /**
@@ -411,8 +413,8 @@ class QuickBooksAccountingClient {
    * @param {Object} customerObject - customer object to be persisted in QuickBooks
    * @return {Promise<Object>} customer object response
    */
-  async createCustomer(customerObject) {
-    return await this.#create('customer', customerObject);
+  async createCustomer(customerObject: entityType): Promise<object> {
+    return await this.create("customer", customerObject);
   }
 
   /**
@@ -421,8 +423,8 @@ class QuickBooksAccountingClient {
    * @param {Object} departmentObject - department object to be persisted in QuickBooks
    * @return {Promise<Object>} department object response
    */
-  async createDepartment(departmentObject) {
-    return await this.#create('department', departmentObject);
+  async createDepartment(departmentObject: entityType): Promise<object> {
+    return await this.create("department", departmentObject);
   }
 
   /**
@@ -431,8 +433,8 @@ class QuickBooksAccountingClient {
    * @param {Object} depositObject - deposit object to be persisted in QuickBooks
    * @return {Promise<Object>} deposit object response
    */
-  async createDeposit(depositObject) {
-    return await this.#create('deposit', depositObject);
+  async createDeposit(depositObject: entityType): Promise<object> {
+    return await this.create("deposit", depositObject);
   }
 
   /**
@@ -441,8 +443,8 @@ class QuickBooksAccountingClient {
    * @param {Object} employeeObject - employee object to be persisted in QuickBooks
    * @return {Promise<Object>} employee object response
    */
-  async createEmployee(employeeObject) {
-    return await this.#create('employee', employeeObject);
+  async createEmployee(employeeObject: entityType): Promise<object> {
+    return await this.create("employee", employeeObject);
   }
 
   /**
@@ -451,8 +453,8 @@ class QuickBooksAccountingClient {
    * @param {Object} estimateObject - estimate object to be persisted in QuickBooks
    * @return {Promise<Object>} estimate object response
    */
-  async createEstimate(estimateObject) {
-    return await this.#create('estimate', estimateObject);
+  async createEstimate(estimateObject: entityType): Promise<object> {
+    return await this.create("estimate", estimateObject);
   }
 
   /**
@@ -461,8 +463,8 @@ class QuickBooksAccountingClient {
    * @param {Object} invoiceObject - invoice object to be persisted in QuickBooks
    * @return {Promise<Object>} invoice object response
    */
-  async createInvoice(invoiceObject) {
-    return await this.#create('invoice', invoiceObject);
+  async createInvoice(invoiceObject: entityType): Promise<object> {
+    return await this.create("invoice", invoiceObject);
   }
 
   /**
@@ -471,8 +473,8 @@ class QuickBooksAccountingClient {
    * @param {Object} itemObject - item object to be persisted in QuickBooks
    * @return {Promise<Object>} item object response
    */
-  async createItem(itemObject) {
-    return await this.#create('item', itemObject);
+  async createItem(itemObject: entityType): Promise<object> {
+    return await this.create("item", itemObject);
   }
 
   /**
@@ -481,8 +483,8 @@ class QuickBooksAccountingClient {
    * @param {Object} journalCodeObject - journalCode object to be persisted in QuickBooks
    * @return {Promise<Object>} journalCode object response
    */
-  async createJournalCode(journalCodeObject) {
-    return await this.#create('journalCode', journalCodeObject);
+  async createJournalCode(journalCodeObject: entityType): Promise<object> {
+    return await this.create("journalCode", journalCodeObject);
   }
 
   /**
@@ -491,8 +493,8 @@ class QuickBooksAccountingClient {
    * @param {Object} journalEntryObject - journalEntry object to be persisted in QuickBooks
    * @return {Promise<Object>} journalEntry object response
    */
-  async createJournalEntry(journalEntryObject) {
-    return await this.#create('journalEntry', journalEntryObject);
+  async createJournalEntry(journalEntryObject: entityType): Promise<object> {
+    return await this.create("journalEntry", journalEntryObject);
   }
 
   /**
@@ -501,8 +503,8 @@ class QuickBooksAccountingClient {
    * @param {Object} paymentObject - payment object to be persisted in QuickBooks
    * @return {Promise<Object>} payment object response
    */
-  async createPayment(paymentObject) {
-    return await this.#create('payment', paymentObject);
+  async createPayment(paymentObject: entityType): Promise<object> {
+    return await this.create("payment", paymentObject);
   }
 
   /**
@@ -511,8 +513,8 @@ class QuickBooksAccountingClient {
    * @param {Object} paymentMethodObject - paymentMethod object to be persisted in QuickBooks
    * @return {Promise<Object>} paymentMethod object response
    */
-  async createPaymentMethod(paymentMethodObject) {
-    return await this.#create('paymentMethod', paymentMethodObject);
+  async createPaymentMethod(paymentMethodObject: entityType): Promise<object> {
+    return await this.create("paymentMethod", paymentMethodObject);
   }
 
   /**
@@ -521,8 +523,8 @@ class QuickBooksAccountingClient {
    * @param {Object} purchaseObject - purchase object to be persisted in QuickBooks
    * @return {Promise<Object>} purchase object response
    */
-  async createPurchase(purchaseObject) {
-    return await this.#create('purchase', purchaseObject);
+  async createPurchase(purchaseObject: entityType): Promise<object> {
+    return await this.create("purchase", purchaseObject);
   }
 
   /**
@@ -531,8 +533,8 @@ class QuickBooksAccountingClient {
    * @param {Object} purchaseOrderObject - purchaseOrder object to be persisted in QuickBooks
    * @return {Promise<Object>} purchaseOrder object response
    */
-  async createPurchaseOrder(purchaseOrderObject) {
-    return await this.#create('purchaseOrder', purchaseOrderObject);
+  async createPurchaseOrder(purchaseOrderObject: entityType): Promise<object> {
+    return await this.create("purchaseOrder", purchaseOrderObject);
   }
 
   /**
@@ -541,8 +543,8 @@ class QuickBooksAccountingClient {
    * @param {Object} refundReceiptObject - refundReceipt object to be persisted in QuickBooks
    * @return {Promise<Object>} refundReceipt object response
    */
-  async createRefundReceipt(refundReceiptObject) {
-    return await this.#create('refundReceipt', refundReceiptObject);
+  async createRefundReceipt(refundReceiptObject: entityType): Promise<object> {
+    return await this.create("refundReceipt", refundReceiptObject);
   }
 
   /**
@@ -551,8 +553,8 @@ class QuickBooksAccountingClient {
    * @param {Object} salesReceiptObject - salesReceipt object to be persisted in QuickBooks
    * @return {Promise<Object>} salesReceipt object response
    */
-  async createSalesReceipt(salesReceiptObject) {
-    return await this.#create('salesReceipt', salesReceiptObject);
+  async createSalesReceipt(salesReceiptObject: entityType): Promise<object> {
+    return await this.create("salesReceipt", salesReceiptObject);
   }
 
   /**
@@ -561,8 +563,8 @@ class QuickBooksAccountingClient {
    * @param {Object} taxAgencyObject - taxAgency object to be persisted in QuickBooks
    * @return {Promise<Object>} taxAgency object response
    */
-  async createTaxAgency(taxAgencyObject) {
-    return await this.#create('taxAgency', taxAgencyObject);
+  async createTaxAgency(taxAgencyObject: entityType): Promise<object> {
+    return await this.create("taxAgency", taxAgencyObject);
   }
 
   /**
@@ -571,8 +573,8 @@ class QuickBooksAccountingClient {
    * @param {Object} taxServiceObject - taxService object to be persisted in QuickBooks
    * @return {Promise<Object>} taxService object response
    */
-  async createTaxService(taxServiceObject) {
-    return await this.#create('taxService', taxServiceObject);
+  async createTaxService(taxServiceObject: entityType): Promise<object> {
+    return await this.create("taxService", taxServiceObject);
   }
 
   /**
@@ -581,8 +583,8 @@ class QuickBooksAccountingClient {
    * @param {Object} termObject - term object to be persisted in QuickBooks
    * @return {Promise<Object>} term object response
    */
-  async createTerm(termObject) {
-    return await this.#create('term', termObject);
+  async createTerm(termObject: entityType): Promise<object> {
+    return await this.create("term", termObject);
   }
 
   /**
@@ -591,8 +593,8 @@ class QuickBooksAccountingClient {
    * @param {Object} timeActivityObject - timeActivity object to be persisted in QuickBooks
    * @return {Promise<Object>} timeActivity object response
    */
-  async createTimeActivity(timeActivityObject) {
-    return await this.#create('timeActivity', timeActivityObject);
+  async createTimeActivity(timeActivityObject: entityType): Promise<object> {
+    return await this.create("timeActivity", timeActivityObject);
   }
 
   /**
@@ -601,8 +603,8 @@ class QuickBooksAccountingClient {
    * @param {Object} transferObject - transfer object to be persisted in QuickBooks
    * @return {Promise<Object>} transfer object response
    */
-  async createTransfer(transferObject) {
-    return await this.#create('transfer', transferObject);
+  async createTransfer(transferObject: entityType): Promise<object> {
+    return await this.create("transfer", transferObject);
   }
 
   /**
@@ -611,8 +613,8 @@ class QuickBooksAccountingClient {
    * @param {Object} vendorObject - vendor object to be persisted in QuickBooks
    * @return {Promise<Object>} vendor object response
    */
-  async createVendor(vendorObject) {
-    return await this.#create('vendor', vendorObject);
+  async createVendor(vendorObject: entityType): Promise<object> {
+    return await this.create("vendor", vendorObject);
   }
 
   /**
@@ -621,8 +623,8 @@ class QuickBooksAccountingClient {
    * @param {Object} vendorCreditObject - vendorCredit object to be persisted in QuickBooks
    * @return {Promise<Object>} vendorCredit object response
    */
-  async createVendorCredit(vendorCreditObject) {
-    return await this.#create('vendorCredit', vendorCreditObject);
+  async createVendorCredit(vendorCreditObject: entityType): Promise<object> {
+    return await this.create("vendorCredit", vendorCreditObject);
   }
 
   /**
@@ -631,8 +633,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - account's ID to be retrieved.
    * @return {Promise<Object>} account object response
    */
-  async getAccount(id) {
-    return await this.#read('account', id);
+  async getAccount(id: string): Promise<object> {
+    return await this.read("account", id);
   }
 
   /**
@@ -641,8 +643,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - attachable's ID to be retrieved.
    * @return {Promise<Object>} attachable object response
    */
-  async getAttachable(id) {
-    return await this.#read('attachable', id);
+  async getAttachable(id: string): Promise<object> {
+    return await this.read("attachable", id);
   }
 
   /**
@@ -651,8 +653,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - bill's ID to be retrieved.
    * @return {Promise<Object>} bill object response
    */
-  async getBill(id) {
-    return await this.#read('bill', id);
+  async getBill(id: string): Promise<object> {
+    return await this.read("bill", id);
   }
 
   /**
@@ -661,8 +663,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - billPayment's ID to be retrieved.
    * @return {Promise<Object>} billPayment object response
    */
-  async getBillPayment(id) {
-    return await this.#read('billPayment', id);
+  async getBillPayment(id: string): Promise<object> {
+    return await this.read("billPayment", id);
   }
 
   /**
@@ -671,8 +673,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - class's ID to be retrieved.
    * @return {Promise<Object>} class object response
    */
-  async getClass(id) {
-    return await this.#read('class', id);
+  async getClass(id: string): Promise<object> {
+    return await this.read("class", id);
   }
 
   /**
@@ -681,8 +683,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - companyInfo's ID to be retrieved.
    * @return {Promise<Object>} companyInfo object response
    */
-  async getCompanyInfo(id) {
-    return await this.#read('companyInfo', id);
+  async getCompanyInfo(id: string): Promise<object> {
+    return await this.read("companyInfo", id);
   }
 
   /**
@@ -691,8 +693,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - creditMemo's ID to be retrieved.
    * @return {Promise<Object>} creditMemo object response
    */
-  async getCreditMemo(id) {
-    return await this.#read('creditMemo', id);
+  async getCreditMemo(id: string): Promise<object> {
+    return await this.read("creditMemo", id);
   }
 
   /**
@@ -701,8 +703,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - customer's ID to be retrieved.
    * @return {Promise<Object>} customer object response
    */
-  async getCustomer(id) {
-    return await this.#read('customer', id);
+  async getCustomer(id: string): Promise<object> {
+    return await this.read("customer", id);
   }
 
   /**
@@ -711,8 +713,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - department's ID to be retrieved.
    * @return {Promise<Object>} department object response
    */
-  async getDepartment(id) {
-    return await this.#read('department', id);
+  async getDepartment(id: string): Promise<object> {
+    return await this.read("department", id);
   }
 
   /**
@@ -721,8 +723,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - deposit's ID to be retrieved.
    * @return {Promise<Object>} deposit object response
    */
-  async getDeposit(id) {
-    return await this.#read('deposit', id);
+  async getDeposit(id: string): Promise<object> {
+    return await this.read("deposit", id);
   }
 
   /**
@@ -731,8 +733,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - employee's ID to be retrieved.
    * @return {Promise<Object>} employee object response
    */
-  async getEmployee(id) {
-    return await this.#read('employee', id);
+  async getEmployee(id: string): Promise<object> {
+    return await this.read("employee", id);
   }
 
   /**
@@ -741,8 +743,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - estimate's ID to be retrieved.
    * @return {Promise<Object>} estimate object response
    */
-  async getEstimate(id) {
-    return await this.#read('estimate', id);
+  async getEstimate(id: string): Promise<object> {
+    return await this.read("estimate", id);
   }
 
   /**
@@ -751,8 +753,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - exchangeRate's ID to be retrieved.
    * @return {Promise<Object>} exchangeRate object response
    */
-  async getExchangeRate(id) {
-    return await this.#read('exchangeRate', id);
+  async getExchangeRate(id: string): Promise<object> {
+    return await this.read("exchangeRate", id);
   }
 
   /**
@@ -761,8 +763,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - invoice's ID to be retrieved.
    * @return {Promise<Object>} invoice object response
    */
-  async getInvoice(id) {
-    return await this.#read('invoice', id);
+  async getInvoice(id: string): Promise<object> {
+    return await this.read("invoice", id);
   }
 
   /**
@@ -771,8 +773,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - item's ID to be retrieved.
    * @return {Promise<Object>} item object response
    */
-  async getItem(id) {
-    return await this.#read('item', id);
+  async getItem(id: string): Promise<object> {
+    return await this.read("item", id);
   }
 
   /**
@@ -781,8 +783,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - journalCode's ID to be retrieved.
    * @return {Promise<Object>} journalCode object response
    */
-  async getJournalCode(id) {
-    return await this.#read('journalCode', id);
+  async getJournalCode(id: string): Promise<object> {
+    return await this.read("journalCode", id);
   }
 
   /**
@@ -791,8 +793,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - journalEntry's ID to be retrieved.
    * @return {Promise<Object>} journalEntry object response
    */
-  async getJournalEntry(id) {
-    return await this.#read('journalEntry', id);
+  async getJournalEntry(id: string): Promise<object> {
+    return await this.read("journalEntry", id);
   }
 
   /**
@@ -801,8 +803,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - payment's ID to be retrieved.
    * @return {Promise<Object>} payment object response
    */
-  async getPayment(id) {
-    return await this.#read('payment', id);
+  async getPayment(id: string): Promise<object> {
+    return await this.read("payment", id);
   }
 
   /**
@@ -811,8 +813,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - paymentMethod's ID to be retrieved.
    * @return {Promise<Object>} paymentMethod object response
    */
-  async getPaymentMethod(id) {
-    return await this.#read('paymentMethod', id);
+  async getPaymentMethod(id: string): Promise<object> {
+    return await this.read("paymentMethod", id);
   }
 
   /**
@@ -821,8 +823,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - preferences's ID to be retrieved.
    * @return {Promise<Object>} preferences object response
    */
-  async getPreferences(id) {
-    return await this.#read('preferences', id);
+  async getPreferences(id: string): Promise<object> {
+    return await this.read("preferences", id);
   }
 
   /**
@@ -831,8 +833,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - purchase's ID to be retrieved.
    * @return {Promise<Object>} purchase object response
    */
-  async getPurchase(id) {
-    return await this.#read('purchase', id);
+  async getPurchase(id: string): Promise<object> {
+    return await this.read("purchase", id);
   }
 
   /**
@@ -841,8 +843,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - purchaseOrder's ID to be retrieved.
    * @return {Promise<Object>} purchaseOrder object response
    */
-  async getPurchaseOrder(id) {
-    return await this.#read('purchaseOrder', id);
+  async getPurchaseOrder(id: string): Promise<object> {
+    return await this.read("purchaseOrder", id);
   }
 
   /**
@@ -851,8 +853,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - refundReceipt's ID to be retrieved.
    * @return {Promise<Object>} refundReceipt object response
    */
-  async getRefundReceipt(id) {
-    return await this.#read('refundReceipt', id);
+  async getRefundReceipt(id: string): Promise<object> {
+    return await this.read("refundReceipt", id);
   }
 
   /**
@@ -861,8 +863,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - reports's ID to be retrieved.
    * @return {Promise<Object>} reports object response
    */
-  async getReports(id) {
-    return await this.#read('reports', id);
+  async getReports(id: string): Promise<object> {
+    return await this.read("reports", id);
   }
 
   /**
@@ -871,8 +873,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - salesReceipt's ID to be retrieved.
    * @return {Promise<Object>} salesReceipt object response
    */
-  async getSalesReceipt(id) {
-    return await this.#read('salesReceipt', id);
+  async getSalesReceipt(id: string): Promise<object> {
+    return await this.read("salesReceipt", id);
   }
 
   /**
@@ -881,8 +883,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - taxAgency's ID to be retrieved.
    * @return {Promise<Object>} taxAgency object response
    */
-  async getTaxAgency(id) {
-    return await this.#read('taxAgency', id);
+  async getTaxAgency(id: string): Promise<object> {
+    return await this.read("taxAgency", id);
   }
 
   /**
@@ -891,8 +893,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - taxCode's ID to be retrieved.
    * @return {Promise<Object>} taxCode object response
    */
-  async getTaxCode(id) {
-    return await this.#read('taxCode', id);
+  async getTaxCode(id: string): Promise<object> {
+    return await this.read("taxCode", id);
   }
 
   /**
@@ -901,8 +903,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - taxRate's ID to be retrieved.
    * @return {Promise<Object>} taxRate object response
    */
-  async getTaxRate(id) {
-    return await this.#read('taxRate', id);
+  async getTaxRate(id: string): Promise<object> {
+    return await this.read("taxRate", id);
   }
 
   /**
@@ -911,8 +913,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - term's ID to be retrieved.
    * @return {Promise<Object>} term object response
    */
-  async getTerm(id) {
-    return await this.#read('term', id);
+  async getTerm(id: string): Promise<object> {
+    return await this.read("term", id);
   }
 
   /**
@@ -921,8 +923,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - timeActivity's ID to be retrieved.
    * @return {Promise<Object>} timeActivity object response
    */
-  async getTimeActivity(id) {
-    return await this.#read('timeActivity', id);
+  async getTimeActivity(id: string): Promise<object> {
+    return await this.read("timeActivity", id);
   }
 
   /**
@@ -931,8 +933,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - vendor's ID to be retrieved.
    * @return {Promise<Object>} vendor object response
    */
-  async getVendor(id) {
-    return await this.#read('vendor', id);
+  async getVendor(id: string): Promise<object> {
+    return await this.read("vendor", id);
   }
 
   /**
@@ -941,8 +943,8 @@ class QuickBooksAccountingClient {
    * @param {String} id - vendorCredit's ID to be retrieved.
    * @return {Promise<Object>} vendorCredit object response
    */
-  async getVendorCredit(id) {
-    return await this.#read('vendorCredit', id);
+  async getVendorCredit(id: string): Promise<object> {
+    return await this.read("vendorCredit", id);
   }
 
   /**
@@ -951,8 +953,8 @@ class QuickBooksAccountingClient {
    * @param {Object} accountObject - account object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} account object response
    */
-  async updateAccount(accountObject) {
-    return await this.#update('account', accountObject);
+  async updateAccount(accountObject: object): Promise<object> {
+    return await this.update("account", accountObject);
   }
 
   /**
@@ -961,8 +963,8 @@ class QuickBooksAccountingClient {
    * @param {Object} attachableObject - attachable object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} attachable object response
    */
-  async updateAttachable(attachableObject) {
-    return await this.#update('attachable', attachableObject);
+  async updateAttachable(attachableObject: object): Promise<object> {
+    return await this.update("attachable", attachableObject);
   }
 
   /**
@@ -971,8 +973,8 @@ class QuickBooksAccountingClient {
    * @param {Object} billObject - bill object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} bill object response
    */
-  async updateBill(billObject) {
-    return await this.#update('bill', billObject);
+  async updateBill(billObject: object): Promise<object> {
+    return await this.update("bill", billObject);
   }
 
   /**
@@ -981,8 +983,8 @@ class QuickBooksAccountingClient {
    * @param {Object} billPaymentObject - billPayment object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} billPayment object response
    */
-  async updateBillPayment(billPaymentObject) {
-    return await this.#update('billPayment', billPaymentObject);
+  async updateBillPayment(billPaymentObject: object): Promise<object> {
+    return await this.update("billPayment", billPaymentObject);
   }
 
   /**
@@ -991,8 +993,8 @@ class QuickBooksAccountingClient {
    * @param {Object} classObject - class object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} class object response
    */
-  async updateClass(classObject) {
-    return await this.#update('class', classObject);
+  async updateClass(classObject: object): Promise<object> {
+    return await this.update("class", classObject);
   }
 
   /**
@@ -1001,8 +1003,8 @@ class QuickBooksAccountingClient {
    * @param {Object} companyInfoObject - companyInfo object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} companyInfo object response
    */
-  async updateCompanyInfo(companyInfoObject) {
-    return await this.#update('companyInfo', companyInfoObject);
+  async updateCompanyInfo(companyInfoObject: object): Promise<object> {
+    return await this.update("companyInfo", companyInfoObject);
   }
 
   /**
@@ -1011,8 +1013,8 @@ class QuickBooksAccountingClient {
    * @param {Object} creditMemoObject - creditMemo object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} creditMemo object response
    */
-  async updateCreditMemo(creditMemoObject) {
-    return await this.#update('creditMemo', creditMemoObject);
+  async updateCreditMemo(creditMemoObject: object): Promise<object> {
+    return await this.update("creditMemo", creditMemoObject);
   }
 
   /**
@@ -1021,8 +1023,8 @@ class QuickBooksAccountingClient {
    * @param {Object} customerObject - customer object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} customer object response
    */
-  async updateCustomer(customerObject) {
-    return await this.#update('customer', customerObject);
+  async updateCustomer(customerObject: object): Promise<object> {
+    return await this.update("customer", customerObject);
   }
 
   /**
@@ -1031,8 +1033,8 @@ class QuickBooksAccountingClient {
    * @param {Object} departmentObject - department object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} department object response
    */
-  async updateDepartment(departmentObject) {
-    return await this.#update('department', departmentObject);
+  async updateDepartment(departmentObject: object): Promise<object> {
+    return await this.update("department", departmentObject);
   }
 
   /**
@@ -1041,8 +1043,8 @@ class QuickBooksAccountingClient {
    * @param {Object} depositObject - deposit object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} deposit object response
    */
-  async updateDeposit(depositObject) {
-    return await this.#update('deposit', depositObject);
+  async updateDeposit(depositObject: object): Promise<object> {
+    return await this.update("deposit", depositObject);
   }
 
   /**
@@ -1051,8 +1053,8 @@ class QuickBooksAccountingClient {
    * @param {Object} employeeObject - employee object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} employee object response
    */
-  async updateEmployee(employeeObject) {
-    return await this.#update('employee', employeeObject);
+  async updateEmployee(employeeObject: object): Promise<object> {
+    return await this.update("employee", employeeObject);
   }
 
   /**
@@ -1061,8 +1063,8 @@ class QuickBooksAccountingClient {
    * @param {Object} estimateObject - estimate object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} estimate object response
    */
-  async updateEstimate(estimateObject) {
-    return await this.#update('estimate', estimateObject);
+  async updateEstimate(estimateObject: object): Promise<object> {
+    return await this.update("estimate", estimateObject);
   }
 
   /**
@@ -1071,8 +1073,8 @@ class QuickBooksAccountingClient {
    * @param {Object} exchangeRateObject - exchangeRate object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} exchangeRate object response
    */
-  async updateExchangeRate(exchangeRateObject) {
-    return await this.#update('exchangeRate', exchangeRateObject);
+  async updateExchangeRate(exchangeRateObject: object): Promise<object> {
+    return await this.update("exchangeRate", exchangeRateObject);
   }
 
   /**
@@ -1081,8 +1083,8 @@ class QuickBooksAccountingClient {
    * @param {Object} invoiceObject - invoice object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} invoice object response
    */
-  async updateInvoice(invoiceObject) {
-    return await this.#update('invoice', invoiceObject);
+  async updateInvoice(invoiceObject: object): Promise<object> {
+    return await this.update("invoice", invoiceObject);
   }
 
   /**
@@ -1091,8 +1093,8 @@ class QuickBooksAccountingClient {
    * @param {Object} itemObject - item object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} item object response
    */
-  async updateItem(itemObject) {
-    return await this.#update('item', itemObject);
+  async updateItem(itemObject: object): Promise<object> {
+    return await this.update("item", itemObject);
   }
 
   /**
@@ -1101,8 +1103,8 @@ class QuickBooksAccountingClient {
    * @param {Object} journalCodeObject - journalCode object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} journalCode object response
    */
-  async updateJournalCode(journalCodeObject) {
-    return await this.#update('journalCode', journalCodeObject);
+  async updateJournalCode(journalCodeObject: object): Promise<object> {
+    return await this.update("journalCode", journalCodeObject);
   }
 
   /**
@@ -1111,8 +1113,8 @@ class QuickBooksAccountingClient {
    * @param {Object} journalEntryObject - journalEntry object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} journalEntry object response
    */
-  async updateJournalEntry(journalEntryObject) {
-    return await this.#update('journalEntry', journalEntryObject);
+  async updateJournalEntry(journalEntryObject: object): Promise<object> {
+    return await this.update("journalEntry", journalEntryObject);
   }
 
   /**
@@ -1121,8 +1123,8 @@ class QuickBooksAccountingClient {
    * @param {Object} paymentObject - payment object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} payment object response
    */
-  async updatePayment(paymentObject) {
-    return await this.#update('payment', paymentObject);
+  async updatePayment(paymentObject: object): Promise<object> {
+    return await this.update("payment", paymentObject);
   }
 
   /**
@@ -1131,8 +1133,8 @@ class QuickBooksAccountingClient {
    * @param {Object} paymentMethodObject - paymentMethod object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} paymentMethod object response
    */
-  async updatePaymentMethod(paymentMethodObject) {
-    return await this.#update('paymentMethod', paymentMethodObject);
+  async updatePaymentMethod(paymentMethodObject: object): Promise<object> {
+    return await this.update("paymentMethod", paymentMethodObject);
   }
 
   /**
@@ -1141,8 +1143,8 @@ class QuickBooksAccountingClient {
    * @param {Object} preferencesObject - preferences object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} preferences object response
    */
-  async updatePreferences(preferencesObject) {
-    return await this.#update('preferences', preferencesObject);
+  async updatePreferences(preferencesObject: object): Promise<object> {
+    return await this.update("preferences", preferencesObject);
   }
 
   /**
@@ -1151,8 +1153,8 @@ class QuickBooksAccountingClient {
    * @param {Object} purchaseObject - purchase object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} purchase object response
    */
-  async updatePurchase(purchaseObject) {
-    return await this.#update('purchase', purchaseObject);
+  async updatePurchase(purchaseObject: object): Promise<object> {
+    return await this.update("purchase", purchaseObject);
   }
 
   /**
@@ -1161,8 +1163,8 @@ class QuickBooksAccountingClient {
    * @param {Object} purchaseOrderObject - purchaseOrder object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} purchaseOrder object response
    */
-  async updatePurchaseOrder(purchaseOrderObject) {
-    return await this.#update('purchaseOrder', purchaseOrderObject);
+  async updatePurchaseOrder(purchaseOrderObject: object): Promise<object> {
+    return await this.update("purchaseOrder", purchaseOrderObject);
   }
 
   /**
@@ -1171,8 +1173,8 @@ class QuickBooksAccountingClient {
    * @param {Object} refundReceiptObject - refundReceipt object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} refundReceipt object response
    */
-  async updateRefundReceipt(refundReceiptObject) {
-    return await this.#update('refundReceipt', refundReceiptObject);
+  async updateRefundReceipt(refundReceiptObject: object): Promise<object> {
+    return await this.update("refundReceipt", refundReceiptObject);
   }
 
   /**
@@ -1181,8 +1183,8 @@ class QuickBooksAccountingClient {
    * @param {Object} salesReceiptObject - salesReceipt object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} salesReceipt object response
    */
-  async updateSalesReceipt(salesReceiptObject) {
-    return await this.#update('salesReceipt', salesReceiptObject);
+  async updateSalesReceipt(salesReceiptObject: object): Promise<object> {
+    return await this.update("salesReceipt", salesReceiptObject);
   }
 
   /**
@@ -1191,8 +1193,8 @@ class QuickBooksAccountingClient {
    * @param {Object} taxAgencyObject - taxAgency object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} taxAgency object response
    */
-  async updateTaxAgency(taxAgencyObject) {
-    return await this.#update('taxAgency', taxAgencyObject);
+  async updateTaxAgency(taxAgencyObject: object): Promise<object> {
+    return await this.update("taxAgency", taxAgencyObject);
   }
 
   /**
@@ -1201,8 +1203,8 @@ class QuickBooksAccountingClient {
    * @param {Object} taxCodeObject - taxCode object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} taxCode object response
    */
-  async updateTaxCode(taxCodeObject) {
-    return await this.#update('taxCode', taxCodeObject);
+  async updateTaxCode(taxCodeObject: object): Promise<object> {
+    return await this.update("taxCode", taxCodeObject);
   }
 
   /**
@@ -1211,8 +1213,8 @@ class QuickBooksAccountingClient {
    * @param {Object} taxRateObject - taxRate object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} taxRate object response
    */
-  async updateTaxRate(taxRateObject) {
-    return await this.#update('taxRate', taxRateObject);
+  async updateTaxRate(taxRateObject: object): Promise<object> {
+    return await this.update("taxRate", taxRateObject);
   }
 
   /**
@@ -1221,8 +1223,8 @@ class QuickBooksAccountingClient {
    * @param {Object} taxServiceObject - taxService object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} taxService object response
    */
-  async updateTaxService(taxServiceObject) {
-    return await this.#update('taxService', taxServiceObject);
+  async updateTaxService(taxServiceObject: object): Promise<object> {
+    return await this.update("taxService", taxServiceObject);
   }
 
   /**
@@ -1231,8 +1233,8 @@ class QuickBooksAccountingClient {
    * @param {Object} termObject - term object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} term object response
    */
-  async updateTerm(termObject) {
-    return await this.#update('term', termObject);
+  async updateTerm(termObject: object): Promise<object> {
+    return await this.update("term", termObject);
   }
 
   /**
@@ -1241,8 +1243,8 @@ class QuickBooksAccountingClient {
    * @param {Object} timeActivityObject - timeActivity object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} timeActivity object response
    */
-  async updateTimeActivity(timeActivityObject) {
-    return await this.#update('timeActivity', timeActivityObject);
+  async updateTimeActivity(timeActivityObject: object): Promise<object> {
+    return await this.update("timeActivity", timeActivityObject);
   }
 
   /**
@@ -1251,8 +1253,8 @@ class QuickBooksAccountingClient {
    * @param {Object} transferObject - transfer object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} transfer object response
    */
-  async updateTransfer(transferObject) {
-    return await this.#update('transfer', transferObject);
+  async updateTransfer(transferObject: object): Promise<object> {
+    return await this.update("transfer", transferObject);
   }
 
   /**
@@ -1261,8 +1263,8 @@ class QuickBooksAccountingClient {
    * @param {Object} vendorObject - vendor object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} vendor object response
    */
-  async updateVendor(vendorObject) {
-    return await this.#update('vendor', vendorObject);
+  async updateVendor(vendorObject: object): Promise<object> {
+    return await this.update("vendor", vendorObject);
   }
 
   /**
@@ -1271,8 +1273,8 @@ class QuickBooksAccountingClient {
    * @param {Object} vendorCreditObject - vendorCredit object to be updated in QuickBooks (Must include Id and SyncToken fields)
    * @return {Promise<Object>} vendorCredit object response
    */
-  async updateVendorCredit(vendorCreditObject) {
-    return await this.#update('vendorCredit', vendorCreditObject);
+  async updateVendorCredit(vendorCreditObject: object): Promise<object> {
+    return await this.update("vendorCredit", vendorCreditObject);
   }
 
   /**
@@ -1281,8 +1283,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - attachable's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} attachable object response
    */
-  async deleteAttachable(idOrEntity) {
-    return await this.#delete('attachable', idOrEntity);
+  async deleteAttachable(idOrEntity: object | string): Promise<object> {
+    return await this.delete("attachable", idOrEntity);
   }
 
   /**
@@ -1291,8 +1293,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - bill's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} bill object response
    */
-  async deleteBill(idOrEntity) {
-    return await this.#delete('bill', idOrEntity);
+  async deleteBill(idOrEntity: object | string): Promise<object> {
+    return await this.delete("bill", idOrEntity);
   }
 
   /**
@@ -1301,8 +1303,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - billPayment's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} billPayment object response
    */
-  async deleteBillPayment(idOrEntity) {
-    return await this.#delete('billPayment', idOrEntity);
+  async deleteBillPayment(idOrEntity: object | string): Promise<object> {
+    return await this.delete("billPayment", idOrEntity);
   }
 
   /**
@@ -1311,8 +1313,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - creditMemo's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} creditMemo object response
    */
-  async deleteCreditMemo(idOrEntity) {
-    return await this.#delete('creditMemo', idOrEntity);
+  async deleteCreditMemo(idOrEntity: object | string): Promise<object> {
+    return await this.delete("creditMemo", idOrEntity);
   }
 
   /**
@@ -1321,8 +1323,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - deposit's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} deposit object response
    */
-  async deleteDeposit(idOrEntity) {
-    return await this.#delete('deposit', idOrEntity);
+  async deleteDeposit(idOrEntity: object | string): Promise<object> {
+    return await this.delete("deposit", idOrEntity);
   }
 
   /**
@@ -1331,8 +1333,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - estimate's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} estimate object response
    */
-  async deleteEstimate(idOrEntity) {
-    return await this.#delete('estimate', idOrEntity);
+  async deleteEstimate(idOrEntity: object | string): Promise<object> {
+    return await this.delete("estimate", idOrEntity);
   }
 
   /**
@@ -1341,8 +1343,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - invoice's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} invoice object response
    */
-  async deleteInvoice(idOrEntity) {
-    return await this.#delete('invoice', idOrEntity);
+  async deleteInvoice(idOrEntity: object | string): Promise<object> {
+    return await this.delete("invoice", idOrEntity);
   }
 
   /**
@@ -1351,8 +1353,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - journalCode's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} journalCode object response
    */
-  async deleteJournalCode(idOrEntity) {
-    return await this.#delete('journalCode', idOrEntity);
+  async deleteJournalCode(idOrEntity: object | string): Promise<object> {
+    return await this.delete("journalCode", idOrEntity);
   }
 
   /**
@@ -1361,8 +1363,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - journalEntry's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} journalEntry object response
    */
-  async deleteJournalEntry(idOrEntity) {
-    return await this.#delete('journalEntry', idOrEntity);
+  async deleteJournalEntry(idOrEntity: object | string): Promise<object> {
+    return await this.delete("journalEntry", idOrEntity);
   }
 
   /**
@@ -1371,8 +1373,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - payment's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} payment object response
    */
-  async deletePayment(idOrEntity) {
-    return await this.#delete('payment', idOrEntity);
+  async deletePayment(idOrEntity: object | string): Promise<object> {
+    return await this.delete("payment", idOrEntity);
   }
 
   /**
@@ -1381,8 +1383,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - purchase's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} purchase object response
    */
-  async deletePurchase(idOrEntity) {
-    return await this.#delete('purchase', idOrEntity);
+  async deletePurchase(idOrEntity: object | string): Promise<object> {
+    return await this.delete("purchase", idOrEntity);
   }
 
   /**
@@ -1391,8 +1393,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - purchaseOrder's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} purchaseOrder object response
    */
-  async deletePurchaseOrder(idOrEntity) {
-    return await this.#delete('purchaseOrder', idOrEntity);
+  async deletePurchaseOrder(idOrEntity: object | string): Promise<object> {
+    return await this.delete("purchaseOrder", idOrEntity);
   }
 
   /**
@@ -1401,8 +1403,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - refundReceipt's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} refundReceipt object response
    */
-  async deleteRefundReceipt(idOrEntity) {
-    return await this.#delete('refundReceipt', idOrEntity);
+  async deleteRefundReceipt(idOrEntity: object | string): Promise<object> {
+    return await this.delete("refundReceipt", idOrEntity);
   }
 
   /**
@@ -1411,8 +1413,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - salesReceipt's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} salesReceipt object response
    */
-  async deleteSalesReceipt(idOrEntity) {
-    return await this.#delete('salesReceipt', idOrEntity);
+  async deleteSalesReceipt(idOrEntity: object | string): Promise<object> {
+    return await this.delete("salesReceipt", idOrEntity);
   }
 
   /**
@@ -1421,8 +1423,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - timeActivity's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} timeActivity object response
    */
-  async deleteTimeActivity(idOrEntity) {
-    return await this.#delete('timeActivity', idOrEntity);
+  async deleteTimeActivity(idOrEntity: object | string): Promise<object> {
+    return await this.delete("timeActivity", idOrEntity);
   }
 
   /**
@@ -1431,8 +1433,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - transfer's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} transfer object response
    */
-  async deleteTransfer(idOrEntity) {
-    return await this.#delete('transfer', idOrEntity);
+  async deleteTransfer(idOrEntity: object | string): Promise<object> {
+    return await this.delete("transfer", idOrEntity);
   }
 
   /**
@@ -1441,8 +1443,8 @@ class QuickBooksAccountingClient {
    * @param {Object|String} idOrEntity - vendorCredit's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} vendorCredit object response
    */
-  async deleteVendorCredit(idOrEntity) {
-    return await this.#delete('vendorCredit', idOrEntity);
+  async deleteVendorCredit(idOrEntity: object | string): Promise<object> {
+    return await this.delete("vendorCredit", idOrEntity);
   }
 
   /**
@@ -1451,8 +1453,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} account object response
    */
-  async findAccounts(query) {
-    return await this.#query('Account', query);
+  async findAccounts(query: any): Promise<object> {
+    return await this.query("Account", query);
   }
 
   /**
@@ -1461,8 +1463,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} attachable object response
    */
-  async findAttachables(query) {
-    return await this.#query('Attachable', query);
+  async findAttachables(query: any): Promise<object> {
+    return await this.query("Attachable", query);
   }
 
   /**
@@ -1471,8 +1473,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} bill object response
    */
-  async findBills(query) {
-    return await this.#query('Bill', query);
+  async findBills(query: any): Promise<object> {
+    return await this.query("Bill", query);
   }
 
   /**
@@ -1481,8 +1483,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} billPayment object response
    */
-  async findBillPayments(query) {
-    return await this.#query('BillPayment', query);
+  async findBillPayments(query: any): Promise<object> {
+    return await this.query("BillPayment", query);
   }
 
   /**
@@ -1491,8 +1493,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} budget object response
    */
-  async findBudgets(query) {
-    return await this.#query('Budget', query);
+  async findBudgets(query: any): Promise<object> {
+    return await this.query("Budget", query);
   }
 
   /**
@@ -1501,8 +1503,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} class object response
    */
-  async findClasses(query) {
-    return await this.#query('Class', query);
+  async findClasses(query: any): Promise<object> {
+    return await this.query("Class", query);
   }
 
   /**
@@ -1511,8 +1513,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} companyInfo object response
    */
-  async findCompanyInfos(query) {
-    return await this.#query('CompanyInfo', query);
+  async findCompanyInfos(query: any): Promise<object> {
+    return await this.query("CompanyInfo", query);
   }
 
   /**
@@ -1521,8 +1523,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} creditMemo object response
    */
-  async findCreditMemos(query) {
-    return await this.#query('CreditMemo', query);
+  async findCreditMemos(query: any): Promise<object> {
+    return await this.query("CreditMemo", query);
   }
 
   /**
@@ -1531,8 +1533,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} customer object response
    */
-  async findCustomers(query) {
-    return await this.#query('Customer', query);
+  async findCustomers(query: any): Promise<object> {
+    return await this.query("Customer", query);
   }
 
   /**
@@ -1541,8 +1543,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} department object response
    */
-  async findDepartments(query) {
-    return await this.#query('Department', query);
+  async findDepartments(query: any): Promise<object> {
+    return await this.query("Department", query);
   }
 
   /**
@@ -1551,8 +1553,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} deposit object response
    */
-  async findDeposits(query) {
-    return await this.#query('Deposit', query);
+  async findDeposits(query: any): Promise<object> {
+    return await this.query("Deposit", query);
   }
 
   /**
@@ -1561,8 +1563,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} employee object response
    */
-  async findEmployees(query) {
-    return await this.#query('Employee', query);
+  async findEmployees(query: any): Promise<object> {
+    return await this.query("Employee", query);
   }
 
   /**
@@ -1571,8 +1573,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} estimate object response
    */
-  async findEstimates(query) {
-    return await this.#query('Estimate', query);
+  async findEstimates(query: any): Promise<object> {
+    return await this.query("Estimate", query);
   }
 
   /**
@@ -1581,8 +1583,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} exchangeRate object response
    */
-  async findExchangeRates(query) {
-    return await this.#query('ExchangeRate', query);
+  async findExchangeRates(query: any): Promise<object> {
+    return await this.query("ExchangeRate", query);
   }
 
   /**
@@ -1591,8 +1593,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} invoice object response
    */
-  async findInvoices(query) {
-    return await this.#query('Invoice', query);
+  async findInvoices(query: any): Promise<object> {
+    return await this.query("Invoice", query);
   }
 
   /**
@@ -1601,8 +1603,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} item object response
    */
-  async findItems(query) {
-    return await this.#query('Item', query);
+  async findItems(query: any): Promise<object> {
+    return await this.query("Item", query);
   }
 
   /**
@@ -1611,8 +1613,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} journalCode object response
    */
-  async findJournalCodes(query) {
-    return await this.#query('JournalCode', query);
+  async findJournalCodes(query: any): Promise<object> {
+    return await this.query("JournalCode", query);
   }
 
   /**
@@ -1621,8 +1623,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} journalEntry object response
    */
-  async findJournalEntries(query) {
-    return await this.#query('JournalEntry', query);
+  async findJournalEntries(query: any): Promise<object> {
+    return await this.query("JournalEntry", query);
   }
 
   /**
@@ -1631,8 +1633,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} payment object response
    */
-  async findPayments(query) {
-    return await this.#query('Payment', query);
+  async findPayments(query: any): Promise<object> {
+    return await this.query("Payment", query);
   }
 
   /**
@@ -1641,8 +1643,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} paymentMethod object response
    */
-  async findPaymentMethods(query) {
-    return await this.#query('PaymentMethod', query);
+  async findPaymentMethods(query: any): Promise<object> {
+    return await this.query("PaymentMethod", query);
   }
 
   /**
@@ -1651,8 +1653,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} preferences object response
    */
-  async findPreferences(query) {
-    return await this.#query('Preferences', query);
+  async findPreferences(query: any): Promise<object> {
+    return await this.query("Preferences", query);
   }
 
   /**
@@ -1661,8 +1663,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} purchase object response
    */
-  async findPurchases(query) {
-    return await this.#query('Purchase', query);
+  async findPurchases(query: any): Promise<object> {
+    return await this.query("Purchase", query);
   }
 
   /**
@@ -1671,8 +1673,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} purchaseOrder object response
    */
-  async findPurchaseOrders(query) {
-    return await this.#query('PurchaseOrder', query);
+  async findPurchaseOrders(query: any): Promise<object> {
+    return await this.query("PurchaseOrder", query);
   }
 
   /**
@@ -1681,8 +1683,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} refundReceipt object response
    */
-  async findRefundReceipts(query) {
-    return await this.#query('RefundReceipt', query);
+  async findRefundReceipts(query: any): Promise<object> {
+    return await this.query("RefundReceipt", query);
   }
 
   /**
@@ -1691,8 +1693,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} salesReceipt object response
    */
-  async findSalesReceipts(query) {
-    return await this.#query('SalesReceipt', query);
+  async findSalesReceipts(query: any): Promise<object> {
+    return await this.query("SalesReceipt", query);
   }
 
   /**
@@ -1701,8 +1703,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} taxAgency object response
    */
-  async findTaxAgencies(query) {
-    return await this.#query('TaxAgency', query);
+  async findTaxAgencies(query: any): Promise<object> {
+    return await this.query("TaxAgency", query);
   }
 
   /**
@@ -1711,8 +1713,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} taxCode object response
    */
-  async findTaxCodes(query) {
-    return await this.#query('TaxCode', query);
+  async findTaxCodes(query: any): Promise<object> {
+    return await this.query("TaxCode", query);
   }
 
   /**
@@ -1721,8 +1723,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} taxRate object response
    */
-  async findTaxRates(query) {
-    return await this.#query('TaxRate', query);
+  async findTaxRates(query: any): Promise<object> {
+    return await this.query("TaxRate", query);
   }
 
   /**
@@ -1731,8 +1733,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} term object response
    */
-  async findTerms(query) {
-    return await this.#query('Term', query);
+  async findTerms(query: any): Promise<object> {
+    return await this.query("Term", query);
   }
 
   /**
@@ -1741,8 +1743,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} timeActivity object response
    */
-  async findTimeActivities(query) {
-    return await this.#query('TimeActivity', query);
+  async findTimeActivities(query: any): Promise<object> {
+    return await this.query("TimeActivity", query);
   }
 
   /**
@@ -1751,8 +1753,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} vendor object response
    */
-  async findVendors(query) {
-    return await this.#query('Vendor', query);
+  async findVendors(query: any): Promise<object> {
+    return await this.query("Vendor", query);
   }
 
   /**
@@ -1761,8 +1763,8 @@ class QuickBooksAccountingClient {
    * @param {Object=|Object[]=} query - object or array of object to be used as query condition / filter
    * @return {Promise<Object>} vendorCredit object response
    */
-  async findVendorCredits(query) {
-    return await this.#query('VendorCredit', query);
+  async findVendorCredits(query: any): Promise<object> {
+    return await this.query("VendorCredit", query);
   }
 
   /**
@@ -1771,8 +1773,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} AccountList object response
    */
-  async reportAccountList(params) {
-    return await this.#report('AccountList', params);
+  async reportAccountList(params: object | undefined): Promise<object> {
+    return await this.report("AccountList", params);
   }
 
   /**
@@ -1781,8 +1783,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} AgedPayableDetail object response
    */
-  async reportAgedPayableDetail(params) {
-    return await this.#report('AgedPayableDetail', params);
+  async reportAgedPayableDetail(params: object | undefined): Promise<object> {
+    return await this.report("AgedPayableDetail", params);
   }
 
   /**
@@ -1791,8 +1793,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} AgedPayables object response
    */
-  async reportAgedPayables(params) {
-    return await this.#report('AgedPayables', params);
+  async reportAgedPayables(params: object | undefined): Promise<object> {
+    return await this.report("AgedPayables", params);
   }
 
   /**
@@ -1801,8 +1803,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} AgedReceivableDetail object response
    */
-  async reportAgedReceivableDetail(params) {
-    return await this.#report('AgedReceivableDetail', params);
+  async reportAgedReceivableDetail(params: object | undefined): Promise<object> {
+    return await this.report("AgedReceivableDetail", params);
   }
 
   /**
@@ -1811,8 +1813,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} AgedReceivables object response
    */
-  async reportAgedReceivables(params) {
-    return await this.#report('AgedReceivables', params);
+  async reportAgedReceivables(params: object | undefined): Promise<object> {
+    return await this.report("AgedReceivables", params);
   }
 
   /**
@@ -1821,8 +1823,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} BalanceSheet object response
    */
-  async reportBalanceSheet(params) {
-    return await this.#report('BalanceSheet', params);
+  async reportBalanceSheet(params: object | undefined): Promise<object> {
+    return await this.report("BalanceSheet", params);
   }
 
   /**
@@ -1831,8 +1833,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} CashFlow object response
    */
-  async reportCashFlow(params) {
-    return await this.#report('CashFlow', params);
+  async reportCashFlow(params: object | undefined): Promise<object> {
+    return await this.report("CashFlow", params);
   }
 
   /**
@@ -1841,8 +1843,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} CustomerBalance object response
    */
-  async reportCustomerBalance(params) {
-    return await this.#report('CustomerBalance', params);
+  async reportCustomerBalance(params: object | undefined): Promise<object> {
+    return await this.report("CustomerBalance", params);
   }
 
   /**
@@ -1851,8 +1853,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} CustomerBalanceDetail object response
    */
-  async reportCustomerBalanceDetail(params) {
-    return await this.#report('CustomerBalanceDetail', params);
+  async reportCustomerBalanceDetail(params: object | undefined): Promise<object> {
+    return await this.report("CustomerBalanceDetail", params);
   }
 
   /**
@@ -1861,8 +1863,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} CustomerIncome object response
    */
-  async reportCustomerIncome(params) {
-    return await this.#report('CustomerIncome', params);
+  async reportCustomerIncome(params: object | undefined): Promise<object> {
+    return await this.report("CustomerIncome", params);
   }
 
   /**
@@ -1871,8 +1873,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} FECReport object response
    */
-  async reportFECReport(params) {
-    return await this.#report('FECReport', params);
+  async reportFECReport(params: object | undefined): Promise<object> {
+    return await this.report("FECReport", params);
   }
 
   /**
@@ -1881,8 +1883,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} GeneralLedger object response
    */
-  async reportGeneralLedger(params) {
-    return await this.#report('GeneralLedger', params);
+  async reportGeneralLedger(params: object | undefined): Promise<object> {
+    return await this.report("GeneralLedger", params);
   }
 
   /**
@@ -1891,8 +1893,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} GeneralLedgerFR object response
    */
-  async reportGeneralLedgerFR(params) {
-    return await this.#report('GeneralLedgerFR', params);
+  async reportGeneralLedgerFR(params: object | undefined): Promise<object> {
+    return await this.report("GeneralLedgerFR", params);
   }
 
   /**
@@ -1901,8 +1903,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} InventoryValuationSummary object response
    */
-  async reportInventoryValuationSummary(params) {
-    return await this.#report('InventoryValuationSummary', params);
+  async reportInventoryValuationSummary(params: object | undefined): Promise<object> {
+    return await this.report("InventoryValuationSummary", params);
   }
 
   /**
@@ -1911,8 +1913,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} JournalReport object response
    */
-  async reportJournalReport(params) {
-    return await this.#report('JournalReport', params);
+  async reportJournalReport(params: object | undefined): Promise<object> {
+    return await this.report("JournalReport", params);
   }
 
   /**
@@ -1921,8 +1923,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} ProfitAndLoss object response
    */
-  async reportProfitAndLoss(params) {
-    return await this.#report('ProfitAndLoss', params);
+  async reportProfitAndLoss(params: object | undefined): Promise<object> {
+    return await this.report("ProfitAndLoss", params);
   }
 
   /**
@@ -1931,8 +1933,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} ProfitAndLossDetail object response
    */
-  async reportProfitAndLossDetail(params) {
-    return await this.#report('ProfitAndLossDetail', params);
+  async reportProfitAndLossDetail(params: object | undefined): Promise<object> {
+    return await this.report("ProfitAndLossDetail", params);
   }
 
   /**
@@ -1941,8 +1943,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} ClassSales object response
    */
-  async reportClassSales(params) {
-    return await this.#report('ClassSales', params);
+  async reportClassSales(params: object | undefined): Promise<object> {
+    return await this.report("ClassSales", params);
   }
 
   /**
@@ -1951,8 +1953,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} CustomerSales object response
    */
-  async reportCustomerSales(params) {
-    return await this.#report('CustomerSales', params);
+  async reportCustomerSales(params: object | undefined): Promise<object> {
+    return await this.report("CustomerSales", params);
   }
 
   /**
@@ -1961,8 +1963,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} DepartmentSales object response
    */
-  async reportDepartmentSales(params) {
-    return await this.#report('DepartmentSales', params);
+  async reportDepartmentSales(params: object | undefined): Promise<object> {
+    return await this.report("DepartmentSales", params);
   }
 
   /**
@@ -1971,8 +1973,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} ItemSales object response
    */
-  async reportItemSales(params) {
-    return await this.#report('ItemSales', params);
+  async reportItemSales(params: object | undefined): Promise<object> {
+    return await this.report("ItemSales", params);
   }
 
   /**
@@ -1981,8 +1983,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} TaxSummary object response
    */
-  async reportTaxSummary(params) {
-    return await this.#report('TaxSummary', params);
+  async reportTaxSummary(params: object | undefined): Promise<object> {
+    return await this.report("TaxSummary", params);
   }
 
   /**
@@ -1991,8 +1993,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} TransactionList object response
    */
-  async reportTransactionList(params) {
-    return await this.#report('TransactionList', params);
+  async reportTransactionList(params: object | undefined): Promise<object> {
+    return await this.report("TransactionList", params);
   }
 
   /**
@@ -2001,8 +2003,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} TransactionListByCustomer object response
    */
-  async reportTransactionListByCustomer(params) {
-    return await this.#report('TransactionListByCustomer', params);
+  async reportTransactionListByCustomer(params: object | undefined): Promise<object> {
+    return await this.report("TransactionListByCustomer", params);
   }
 
   /**
@@ -2011,8 +2013,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} TransactionListByVendor object response
    */
-  async reportTransactionListByVendor(params) {
-    return await this.#report('TransactionListByVendor', params);
+  async reportTransactionListByVendor(params: object | undefined): Promise<object> {
+    return await this.report("TransactionListByVendor", params);
   }
 
   /**
@@ -2021,8 +2023,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} TransactionListWithSplits object response
    */
-  async reportTransactionListWithSplits(params) {
-    return await this.#report('TransactionListWithSplits', params);
+  async reportTransactionListWithSplits(params: object | undefined): Promise<object> {
+    return await this.report("TransactionListWithSplits", params);
   }
 
   /**
@@ -2031,8 +2033,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} TrialBalance object response
    */
-  async reportTrialBalance(params) {
-    return await this.#report('TrialBalance', params);
+  async reportTrialBalance(params: object | undefined): Promise<object> {
+    return await this.report("TrialBalance", params);
   }
 
   /**
@@ -2041,8 +2043,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} VendorBalance object response
    */
-  async reportVendorBalance(params) {
-    return await this.#report('VendorBalance', params);
+  async reportVendorBalance(params: object | undefined): Promise<object> {
+    return await this.report("VendorBalance", params);
   }
 
   /**
@@ -2051,8 +2053,8 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} VendorBalanceDetail object response
    */
-  async reportVendorBalanceDetail(params) {
-    return await this.#report('VendorBalanceDetail', params);
+  async reportVendorBalanceDetail(params: object | undefined): Promise<object> {
+    return await this.report("VendorBalanceDetail", params);
   }
 
   /**
@@ -2061,9 +2063,7 @@ class QuickBooksAccountingClient {
    * @param {Object=} params - parameter object to be send as condition / filter
    * @return {Promise<Object>} VendorExpenses object response
    */
-  async reportVendorExpenses(params) {
-    return await this.#report('VendorExpenses', params);
+  async reportVendorExpenses(params: object | undefined): Promise<object> {
+    return await this.report("VendorExpenses", params);
   }
-}
-
-export default QuickBooksAccountingClient;
+};

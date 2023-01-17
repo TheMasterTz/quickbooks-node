@@ -1,68 +1,103 @@
-# quickbooks-node
-An unofficial `Pure ESM` NodeJS Client for Intuit QuickBooks V3 API inspired by less-maintained [node-quickbooks](https://github.com/mcohen01/node-quickbooks) package. Similar but slightly different exposed API.  
-If you're still using CommonJS `require`, please read this [resource](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c) on how to import ESM package.  
-Please note that this package is still on unstable version so any minor version change might break the implementation.  
-You'll need to at least use Node version >=14.18.0 to be able to use this package.  
-## Installation
+# TSDX User Guide
 
-To install this package to your node project: (Change `#<ref>` with the specified tag/release)
-```
-  npm install spyndutz/quickbooks-node#<ref>
-```
+Congrats! You just saved yourself hours of work by bootstrapping this project with TSDX. Let’s get you oriented with what’s here and how to use it.
 
-## Usage
-For OAuth and handling the token, please use [intuit-oauth](https://github.com/intuit/oauth-jsclient) package provided by the Intuit.  
-This package return same response structure specified by Intuit QuickBooks API Documentation, except that if it's a create, read or update API, it directly return the Object/Array inside `entity` key.  
-This package only support promise-style API.  
+> This TSDX setup is meant for developing libraries (not apps!) that can be published to NPM. If you’re looking to build a Node app, you could use `ts-node-dev`, plain `ts-node`, or simple `tsc`.
 
-### Import
-```javascript
-// ESM
-import { QuickBooksAccountingClient } from 'quickbooks-node';
-// CJS (In async context)
-const { QuickBooksAccountingClient } = await import('quickbooks-node');
-```
-  
-### Create new instance
-#### QuickBooksAccountingClient(config)
+> If you’re new to TypeScript, checkout [this handy cheatsheet](https://devhints.io/typescript)
 
-__Arguments__
-- `config: object?` - Configurable object
+## Commands
 
-__Config Object__
-- `accessToken: string` - User's generated access token
-- `realmId: string` - User's company realmId
-- `minorVersion: number?` - (Optional) minor version of QuickBooks Online API to be used (Default value: 65)
-- `useSandbox: boolean?` - (Optional) boolean flags to use sandbox environment (Default value: If `NODE_ENV === 'production'` false, else true)
-- `debug: boolean?` - (Optional) boolean flags to toggle http request log (Default value: If `NODE_ENV === 'production'` false, else true)
+TSDX scaffolds your new library inside `/src`.
 
-```javascript
-const qbo = new QuickBooksAccountingClient({
-  accessToken: '<accessToken>',
-  realmId: '<realmId>',
-  minorVersion: 65,
-  useSandbox: true,
-  debug: false
-});
+To run TSDX, use:
+
+```bash
+npm start # or yarn start
 ```
 
-### Helper function
-#### Get Instance Access Token
-```javascript
-let accessToken = qbo.getAccessToken();
+This builds to `/dist` and runs the project in watch mode so any edits you save inside `src` causes a rebuild to `/dist`.
+
+To do a one-off build, use `npm run build` or `yarn build`.
+
+To run tests, use `npm test` or `yarn test`.
+
+## Configuration
+
+Code quality is set up for you with `prettier`, `husky`, and `lint-staged`. Adjust the respective fields in `package.json` accordingly.
+
+### Jest
+
+Jest tests are set up to run with `npm test` or `yarn test`.
+
+### Bundle Analysis
+
+[`size-limit`](https://github.com/ai/size-limit) is set up to calculate the real cost of your library with `npm run size` and visualize the bundle with `npm run analyze`.
+
+#### Setup Files
+
+This is the folder structure we set up for you:
+
+```txt
+/src
+  index.tsx       # EDIT THIS
+/test
+  blah.test.tsx   # EDIT THIS
+.gitignore
+package.json
+README.md         # EDIT THIS
+tsconfig.json
 ```
-#### Update Instance Access Token
-```javascript
-qbo.setAccessToken(accessToken);
+
+### Rollup
+
+TSDX uses [Rollup](https://rollupjs.org) as a bundler and generates multiple rollup configs for various module formats and build settings. See [Optimizations](#optimizations) for details.
+
+### TypeScript
+
+`tsconfig.json` is set up to interpret `dom` and `esnext` types, as well as `react` for `jsx`. Adjust according to your needs.
+
+## Continuous Integration
+
+### GitHub Actions
+
+Two actions are added by default:
+
+- `main` which installs deps w/ cache, lints, tests, and builds on all pushes against a Node and OS matrix
+- `size` which comments cost comparison of your library on every pull request using [`size-limit`](https://github.com/ai/size-limit)
+
+## Optimizations
+
+Please see the main `tsdx` [optimizations docs](https://github.com/palmerhq/tsdx#optimizations). In particular, know that you can take advantage of development-only optimizations:
+
+```js
+// ./types/index.d.ts
+declare var __DEV__: boolean;
+
+// inside your code...
+if (__DEV__) {
+  console.log('foo');
+}
 ```
 
-### API Usage
-#### API List
+You can also choose to install and use [invariant](https://github.com/palmerhq/tsdx#invariant) and [warning](https://github.com/palmerhq/tsdx#warning) functions.
 
+## Module Formats
 
+CJS, ESModules, and UMD module formats are supported.
 
+The appropriate paths are configured in `package.json` and `dist/index.js` accordingly. Please report if any issues are found.
 
-### Error Handling
-Any constructor error that happens is likely happened because the parameters that you send to create the instance are invalid. Please refer to [usage](#usage) on how to build a correct Client instance.  
-Any API error from the request process is returned directly as an `AxiosError` (Package that we use to perform http request), so you need to handle them yourselves.  Please refer to [Axios Handling Error](https://github.com/axios/axios/tree/v1.1.3#handling-errors) section to understand the error object stucture.  
-Please report to the issue if there's non `AxiosError` that happens since this version is still unstable, I can't guarantee it covered any errors that could happen.
+## Named Exports
+
+Per Palmer Group guidelines, [always use named exports.](https://github.com/palmerhq/typescript#exports) Code split inside your React app instead of your React library.
+
+## Including Styles
+
+There are many ways to ship styles, including with CSS-in-JS. TSDX has no opinion on this, configure how you like.
+
+For vanilla CSS, you can include it at the root directory and add it to the `files` section in your `package.json`, so that it can be imported separately by your users and run through their bundler's loader.
+
+## Publishing to NPM
+
+We recommend using [np](https://github.com/sindresorhus/np).
