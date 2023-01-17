@@ -1,7 +1,7 @@
 export interface QuickbooksConfig {
   accessToken: string;
   refreshToken: string;
-  realmId: string;
+  realmId: string | number;
   minorVersion?: number | null | string;
   useSandbox?: boolean;
   debug?: boolean;
