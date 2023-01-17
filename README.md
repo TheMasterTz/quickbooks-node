@@ -1,6 +1,6 @@
 # node-quickbooks
 
-nodejs client for Intuit's [QuickBooks API] [1]
+nodejs client for Intuit's [QuickBooks API]
 
 ## Installation
 
@@ -169,7 +169,7 @@ const data = await ConnetQB.findAttachables({
 console.log(JSON.stringify(data));
 ```
 
-## Example App
+<!-- ## Example App
 
 The `example` directory contains a barebones Express application that demonstrates the OAuth workflow.
 
@@ -179,27 +179,21 @@ First navigate to the `example` directory and install the required dependencies 
 
     npm install
 
-You will need to create an Intuit Developer account at <https://developer.intuit.com> and add your app's OAuth Consumer Key and Secret to `app.js`. Pay attention to which APIs (Payments, QuickBooks) you select during the application creation process, you will have to update `example/views/intuit.ejs` if you did not select both.
+You will need to create an Intuit Developer account at <https://developer.intuit.com> and add your app's OAuth Consumer Key and Secret to `app.ts`. Pay attention to which APIs (Payments, QuickBooks) you select during the application creation process, you will have to update `example/views/intuit.ejs` if you did not select both.
 
 ### Running
 
 Start the app
 
-    node app.js
+    tsc; node dist/index.js"
 
-Browse to http://localhost:3000/start and you will see a page containing only the Intuit Developer Javascript-rendered button. Clicking on this kicks off the OAuth exchange.
+Browse to <http://localhost:3000/start> and you will see a page containing only the Intuit Developer Javascript-rendered button. Clicking on this kicks off the OAuth exchange.
 
-The Intuit Developer Javascript code calls back into the node application, which needs to invoke the OAuth Request Token URL at https://oauth.intuit.com/oauth/v1/get_request_token via a server-side http POST method. Note how the response from the http POST is parsed and the browser is redirected to the App Center URL at https://appcenter.intuit.com/Connect/Begin?oauth_token= with the `oauth_token` passed as a URL parameter. Note also how the `oauth_token_secret` needs to somehow be maintained across http requests, as it needs to be passed in the second server-side http POST to the Access Token URL at https://oauth.intuit.com/oauth/v1/get_access_token. This final step is invoked once the user has authenticated on Intuit's site and authorized the application, and then the user is redirected back to the node application at the callback URL specified as a parameter in the Request Token remote call, in the example app's case, http://localhost:3000/callback.
+The Intuit Developer Javascript code calls back into the node application, which needs to invoke the OAuth Request Token URL at <https://oauth.intuit.com/oauth/v1/get_request_token> via a server-side http POST method. Note how the response from the http POST is parsed and the browser is redirected to the App Center URL at <https://appcenter.intuit.com/Connect/Begin?oauth_token=> with the `oauth_token` passed as a URL parameter. Note also how the `oauth_token_secret` needs to somehow be maintained across http requests, as it needs to be passed in the second server-side http POST to the Access Token URL at <https://oauth.intuit.com/oauth/v1/get_access_token>. This final step is invoked once the user has authenticated on Intuit's site and authorized the application, and then the user is redirected back to the node application at the callback URL specified as a parameter in the Request Token remote call, in the example app's case, <http://localhost:3000/callback>.
 
 ### Configuration
 
-The Intuit Developer Javascript code contained in `intuit.ejs` is configured with the `grantUrl` option set to "http://localhost:3000/requestToken". You will want to change this to an appropriate URL for your application, but you will need to write similar functionality to that contained in the '/requestToken' route configured in `app.js`, also taking care to configure your `consumerKey` and `consumerSecret` on lines 27-28 in app.js.
-
-## Running the tests
-
-First you'll need to fill in the missing values in config.js. The consumerKey and consumerSecret you can get from the Intuit Developer portal, the token, tokenSecret, and realmId are easiest to obtain by running the example app, completing the OAuth workflow, and copying the values that are logged to the console. Once you've filled in the missing credentials in config.js you can simply run:
-
-`npm test`
+The Intuit Developer Javascript code contained in `intuit.ejs` is configured with the `grantUrl` option set to "http://localhost:3000/requestToken". You will want to change this to an appropriate URL for your application, but you will need to write similar functionality to that contained in the '/requestToken' route configured in `app.ts`, also taking care to configure your `consumerKey` and `consumerSecret` on lines 27-28 in app.ts. -->
 
 ## Public Api
 
@@ -220,1707 +214,1543 @@ QuickBooks(consumerKey, consumerSecret, oauth_token, oauth_token_secret, realmId
 
 #### Create
 
-- [`createAccount`](#createaccountobject-callback)
-- [`createAttachable`](#createattachableobject-callback)
-- [`createBill`](#createbillobject-callback)
-- [`createBillPayment`](#createbillpaymentobject-callback)
-- [`createClass`](#createclassobject-callback)
-- [`createCreditMemo`](#createcreditmemoobject-callback)
-- [`createCustomer`](#createcustomerobject-callback)
-- [`createDepartment`](#createdepartmentobject-callback)
-- [`createDeposit`](#createdepositobject-callback)
-- [`createEmployee`](#createemployeeobject-callback)
-- [`createEstimate`](#createestimateobject-callback)
-- [`createInvoice`](#createinvoiceobject-callback)
-- [`createItem`](#createitemobject-callback)
-- [`createJournalCode`](#createjournalcodeobject-callback)
-- [`createJournalEntry`](#createjournalentryobject-callback)
-- [`createPayment`](#createpaymentobject-callback)
-- [`createPaymentMethod`](#createpaymentmethodobject-callback)
-- [`createPurchase`](#createpurchaseobject-callback)
-- [`createPurchaseOrder`](#createpurchaseorderobject-callback)
-- [`createRefundReceipt`](#createrefundreceiptobject-callback)
-- [`createSalesReceipt`](#createsalesreceiptobject-callback)
-- [`createTaxAgency`](#createtaxagencyobject-callback)
-- [`createTaxService`](#createtaxserviceobject-callback)
-- [`createTerm`](#createtermobject-callback)
-- [`createTimeActivity`](#createtimeactivityobject-callback)
-- [`createTransfer`](#createtransferobject-callback)
-- [`createVendor`](#createvendorobject-callback)
-- [`createVendorCredit`](#createvendorcreditobject-callback)
+- [`createAccount`](#createaccountobject)
+- [`createAttachable`](#createattachableobject)
+- [`createBill`](#createbillobject)
+- [`createBillPayment`](#createbillpaymentobject)
+- [`createClass`](#createclassobject)
+- [`createCreditMemo`](#createcreditmemoobject)
+- [`createCustomer`](#createcustomerobject)
+- [`createDepartment`](#createdepartmentobject)
+- [`createDeposit`](#createdepositobject)
+- [`createEmployee`](#createemployeeobject)
+- [`createEstimate`](#createestimateobject)
+- [`createInvoice`](#createinvoiceobject)
+- [`createItem`](#createitemobject)
+- [`createJournalCode`](#createjournalcodeobject)
+- [`createJournalEntry`](#createjournalentryobject)
+- [`createPayment`](#createpaymentobject)
+- [`createPaymentMethod`](#createpaymentmethodobject)
+- [`createPurchase`](#createpurchaseobject)
+- [`createPurchaseOrder`](#createpurchaseorderobject)
+- [`createRefundReceipt`](#createrefundreceiptobject)
+- [`createSalesReceipt`](#createsalesreceiptobject)
+- [`createTaxAgency`](#createtaxagencyobject)
+- [`createTaxService`](#createtaxserviceobject)
+- [`createTerm`](#createtermobject)
+- [`createTimeActivity`](#createtimeactivityobject)
+- [`createTransfer`](#createtransferobject)
+- [`createVendor`](#createvendorobject)
+- [`createVendorCredit`](#createvendorcreditobject)
 
 #### Read
 
-- [`getAccount`](#getaccountid-callback)
-- [`getAttachable`](#getattachableid-callback)
-- [`getBill`](#getbillid-callback)
-- [`getBillPayment`](#getbillpaymentid-callback)
-- [`getClass`](#getclassid-callback)
-- [`getCompanyInfo`](#getcompanyinfoid-callback)
-- [`getCreditMemo`](#getcreditmemoid-callback)
-- [`getCustomer`](#getcustomerid-callback)
-- [`getDepartment`](#getdepartmentid-callback)
-- [`getDeposit`](#getdepositid-callback)
-- [`getEmployee`](#getemployeeid-callback)
-- [`getEstimate`](#getestimateid-callback)
-- [`getExchangeRate`](#getexchangerateoptions-callback)
-- [`getInvoice`](#getinvoiceid-callback)
-- [`getItem`](#getitemid-callback)
-- [`getJournalCode`](#getjournalcodeid-callback)
-- [`getJournalEntry`](#getjournalentryid-callback)
-- [`getPayment`](#getpaymentid-callback)
-- [`getPaymentMethod`](#getpaymentmethodid-callback)
-- [`getPreferences`](#getpreferencesid-callback)
-- [`getPurchase`](#getpurchaseid-callback)
-- [`getPurchaseOrder`](#getpurchaseorderid-callback)
-- [`getRefundReceipt`](#getrefundreceiptid-callback)
-- [`getReports`](#getreportsid-callback)
-- [`getSalesReceipt`](#getsalesreceiptid-callback)
-- [`getTaxAgency`](#gettaxagencyid-callback)
-- [`getTaxCode`](#gettaxcodeid-callback)
-- [`getTaxRate`](#gettaxrateid-callback)
-- [`getTerm`](#gettermid-callback)
-- [`getTimeActivity`](#gettimeactivityid-callback)
-- [`getVendor`](#getvendorid-callback)
-- [`getVendorCredit`](#getvendorcreditid-callback)
+- [`getAccount`](#getaccountid)
+- [`getAttachable`](#getattachableid)
+- [`getBill`](#getbillid)
+- [`getBillPayment`](#getbillpaymentid)
+- [`getClass`](#getclassid)
+- [`getCompanyInfo`](#getcompanyinfoid)
+- [`getCreditMemo`](#getcreditmemoid)
+- [`getCustomer`](#getcustomerid)
+- [`getDepartment`](#getdepartmentid)
+- [`getDeposit`](#getdepositid)
+- [`getEmployee`](#getemployeeid)
+- [`getEstimate`](#getestimateid)
+- [`getExchangeRate`](#getexchangerateoptions)
+- [`getInvoice`](#getinvoiceid)
+- [`getItem`](#getitemid)
+- [`getJournalCode`](#getjournalcodeid)
+- [`getJournalEntry`](#getjournalentryid)
+- [`getPayment`](#getpaymentid)
+- [`getPaymentMethod`](#getpaymentmethodid)
+- [`getPreferences`](#getpreferencesid)
+- [`getPurchase`](#getpurchaseid)
+- [`getPurchaseOrder`](#getpurchaseorderid)
+- [`getRefundReceipt`](#getrefundreceiptid)
+- [`getReports`](#getreportsid)
+- [`getSalesReceipt`](#getsalesreceiptid)
+- [`getTaxAgency`](#gettaxagencyid)
+- [`getTaxCode`](#gettaxcodeid)
+- [`getTaxRate`](#gettaxrateid)
+- [`getTerm`](#gettermid)
+- [`getTimeActivity`](#gettimeactivityid)
+- [`getVendor`](#getvendorid)
+- [`getVendorCredit`](#getvendorcreditid)
 
 #### Update
 
-- [`updateAccount`](#updateaccountobject-callback)
-- [`updateAttachable`](#updateattachableobject-callback)
-- [`updateBill`](#updatebillobject-callback)
-- [`updateBillPayment`](#updatebillpaymentobject-callback)
-- [`updateClass`](#updateclassobject-callback)
-- [`updateCompanyInfo`](#updatecompanyinfoobject-callback)
-- [`updateCreditMemo`](#updatecreditmemoobject-callback)
-- [`updateCustomer`](#updatecustomerobject-callback)
-- [`updateDepartment`](#updatedepartmentobject-callback)
-- [`updateDeposit`](#updatedepositobject-callback)
-- [`updateEmployee`](#updateemployeeobject-callback)
-- [`updateEstimate`](#updateestimateobject-callback)
-- [`updateInvoice`](#updateinvoiceobject-callback)
-- [`updateItem`](#updateitemobject-callback)
-- [`updateJournalCode`](#updatejournalcodeobject-callback)
-- [`updateJournalEntry`](#updatejournalentryobject-callback)
-- [`updatePayment`](#updatepaymentobject-callback)
-- [`updatePaymentMethod`](#updatepaymentmethodobject-callback)
-- [`updatePreferences`](#updatepreferencesobject-callback)
-- [`updatePurchase`](#updatepurchaseobject-callback)
-- [`updatePurchaseOrder`](#updatepurchaseorderobject-callback)
-- [`updateRefundReceipt`](#updaterefundreceiptobject-callback)
-- [`updateSalesReceipt`](#updatesalesreceiptobject-callback)
-- [`updateTaxAgency`](#updatetaxagencyobject-callback)
-- [`updateTaxCode`](#updatetaxcodeobject-callback)
-- [`updateTaxRate`](#updatetaxrateobject-callback)
-- [`updateTerm`](#updatetermobject-callback)
-- [`updateTimeActivity`](#updatetimeactivityobject-callback)
-- [`updateTransfer`](#updatetransferobject-callback)
-- [`updateVendor`](#updatevendorobject-callback)
-- [`updateVendorCredit`](#updatevendorcreditobject-callback)
-- [`updateExchangeRate`](#updateexchangerateobject-callback)
+- [`updateAccount`](#updateaccountobject)
+- [`updateAttachable`](#updateattachableobject)
+- [`updateBill`](#updatebillobject)
+- [`updateBillPayment`](#updatebillpaymentobject)
+- [`updateClass`](#updateclassobject)
+- [`updateCompanyInfo`](#updatecompanyinfoobject)
+- [`updateCreditMemo`](#updatecreditmemoobject)
+- [`updateCustomer`](#updatecustomerobject)
+- [`updateDepartment`](#updatedepartmentobject)
+- [`updateDeposit`](#updatedepositobject)
+- [`updateEmployee`](#updateemployeeobject)
+- [`updateEstimate`](#updateestimateobject)
+- [`updateInvoice`](#updateinvoiceobject)
+- [`updateItem`](#updateitemobject)
+- [`updateJournalCode`](#updatejournalcodeobject)
+- [`updateJournalEntry`](#updatejournalentryobject)
+- [`updatePayment`](#updatepaymentobject)
+- [`updatePaymentMethod`](#updatepaymentmethodobject)
+- [`updatePreferences`](#updatepreferencesobject)
+- [`updatePurchase`](#updatepurchaseobject)
+- [`updatePurchaseOrder`](#updatepurchaseorderobject)
+- [`updateRefundReceipt`](#updaterefundreceiptobject)
+- [`updateSalesReceipt`](#updatesalesreceiptobject)
+- [`updateTaxAgency`](#updatetaxagencyobject)
+- [`updateTaxCode`](#updatetaxcodeobject)
+- [`updateTaxRate`](#updatetaxrateobject)
+- [`updateTerm`](#updatetermobject)
+- [`updateTimeActivity`](#updatetimeactivityobject)
+- [`updateTransfer`](#updatetransferobject)
+- [`updateVendor`](#updatevendorobject)
+- [`updateVendorCredit`](#updatevendorcreditobject)
+- [`updateExchangeRate`](#updateexchangerateobject)
 
 #### Delete
 
-- [`deleteAttachable`](#deleteattachableidorentity-callback)
-- [`deleteBill`](#deletebillidorentity-callback)
-- [`deleteBillPayment`](#deletebillpaymentidorentity-callback)
-- [`deleteCreditMemo`](#deletecreditmemoidorentity-callback)
-- [`deleteDeposit`](#deletedepositidorentity-callback)
-- [`deleteEstimate`](#deleteestimateidorentity-callback)
-- [`deleteInvoice`](#deleteinvoiceidorentity-callback)
-- [`deleteJournalCode`](#deletejournalcodeidorentity-callback)
-- [`deleteJournalEntry`](#deletejournalentryidorentity-callback)
-- [`deletePayment`](#deletepaymentidorentity-callback)
-- [`deletePurchase`](#deletepurchaseidorentity-callback)
-- [`deletePurchaseOrder`](#deletepurchaseorderidorentity-callback)
-- [`deleteRefundReceipt`](#deleterefundreceiptidorentity-callback)
-- [`deleteSalesReceipt`](#deletesalesreceiptidorentity-callback)
-- [`deleteTimeActivity`](#deletetimeactivityidorentity-callback)
-- [`deleteTransfer`](#deletetransferidorentity-callback)
-- [`deleteVendorCredit`](#deletevendorcreditidorentity-callback)
+- [`deleteAttachable`](#deleteattachableidorentity)
+- [`deleteBill`](#deletebillidorentity)
+- [`deleteBillPayment`](#deletebillpaymentidorentity)
+- [`deleteCreditMemo`](#deletecreditmemoidorentity)
+- [`deleteDeposit`](#deletedepositidorentity)
+- [`deleteEstimate`](#deleteestimateidorentity)
+- [`deleteInvoice`](#deleteinvoiceidorentity)
+- [`deleteJournalCode`](#deletejournalcodeidorentity)
+- [`deleteJournalEntry`](#deletejournalentryidorentity)
+- [`deletePayment`](#deletepaymentidorentity)
+- [`deletePurchase`](#deletepurchaseidorentity)
+- [`deletePurchaseOrder`](#deletepurchaseorderidorentity)
+- [`deleteRefundReceipt`](#deleterefundreceiptidorentity)
+- [`deleteSalesReceipt`](#deletesalesreceiptidorentity)
+- [`deleteTimeActivity`](#deletetimeactivityidorentity)
+- [`deleteTransfer`](#deletetransferidorentity)
+- [`deleteVendorCredit`](#deletevendorcreditidorentity)
 
 #### Query
 
-- [`findAccounts`](#findaccountscriteria-callback)
-- [`findAttachables`](#findattachablescriteria-callback)
-- [`findBills`](#findbillscriteria-callback)
-- [`findBillPayments`](#findbillpaymentscriteria-callback)
-- [`findBudgets`](#findbudgetscriteria-callback)
-- [`findClasses`](#findclassescriteria-callback)
-- [`findCompanyInfos`](#findcompanyinfoscriteria-callback)
-- [`findCreditMemos`](#findcreditmemoscriteria-callback)
-- [`findCustomers`](#findcustomerscriteria-callback)
-- [`findDepartments`](#finddepartmentscriteria-callback)
-- [`findDeposits`](#finddepositscriteria-callback)
-- [`findEmployees`](#findemployeescriteria-callback)
-- [`findEstimates`](#findestimatescriteria-callback)
-- [`findInvoices`](#findinvoicescriteria-callback)
-- [`findItems`](#finditemscriteria-callback)
-- [`findJournalCodes`](#findjournalcodescriteria-callback)
-- [`findJournalEntries`](#findjournalentriescriteria-callback)
-- [`findPayments`](#findpaymentscriteria-callback)
-- [`findPaymentMethods`](#findpaymentmethodscriteria-callback)
-- [`findPreferenceses`](#findpreferencesescriteria-callback)
-- [`findPurchases`](#findpurchasescriteria-callback)
-- [`findPurchaseOrders`](#findpurchaseorderscriteria-callback)
-- [`findRefundReceipts`](#findrefundreceiptscriteria-callback)
-- [`findSalesReceipts`](#findsalesreceiptscriteria-callback)
-- [`findTaxAgencies`](#findtaxagenciescriteria-callback)
-- [`findTaxCodes`](#findtaxcodescriteria-callback)
-- [`findTaxRates`](#findtaxratescriteria-callback)
-- [`findTerms`](#findtermscriteria-callback)
-- [`findTimeActivities`](#findtimeactivitiescriteria-callback)
-- [`findVendors`](#findvendorscriteria-callback)
-- [`findVendorCredits`](#findvendorcreditscriteria-callback)
-- [`findExchangeRates`](#findexchangeratescriteria-callback)
+- [`findAccounts`](#findaccountscriteria)
+- [`findAttachables`](#findattachablescriteria)
+- [`findBills`](#findbillscriteria)
+- [`findBillPayments`](#findbillpaymentscriteria)
+- [`findBudgets`](#findbudgetscriteria)
+- [`findClasses`](#findclassescriteria)
+- [`findCompanyInfos`](#findcompanyinfoscriteria)
+- [`findCreditMemos`](#findcreditmemoscriteria)
+- [`findCustomers`](#findcustomerscriteria)
+- [`findDepartments`](#finddepartmentscriteria)
+- [`findDeposits`](#finddepositscriteria)
+- [`findEmployees`](#findemployeescriteria)
+- [`findEstimates`](#findestimatescriteria)
+- [`findInvoices`](#findinvoicescriteria)
+- [`findItems`](#finditemscriteria)
+- [`findJournalCodes`](#findjournalcodescriteria)
+- [`findJournalEntries`](#findjournalentriescriteria)
+- [`findPayments`](#findpaymentscriteria)
+- [`findPaymentMethods`](#findpaymentmethodscriteria)
+- [`findPreferenceses`](#findpreferencesescriteria)
+- [`findPurchases`](#findpurchasescriteria)
+- [`findPurchaseOrders`](#findpurchaseorderscriteria)
+- [`findRefundReceipts`](#findrefundreceiptscriteria)
+- [`findSalesReceipts`](#findsalesreceiptscriteria)
+- [`findTaxAgencies`](#findtaxagenciescriteria)
+- [`findTaxCodes`](#findtaxcodescriteria)
+- [`findTaxRates`](#findtaxratescriteria)
+- [`findTerms`](#findtermscriteria)
+- [`findTimeActivities`](#findtimeactivitiescriteria)
+- [`findVendors`](#findvendorscriteria)
+- [`findVendorCredits`](#findvendorcreditscriteria)
+- [`findExchangeRates`](#findexchangeratescriteria)
 
 #### Reports
 
-- [`reportBalanceSheet`](#reportbalancesheetoptions-callback)
-- [`reportProfitAndLoss`](#reportprofitandlossoptions-callback)
-- [`reportProfitAndLossDetail`](#reportprofitandlossdetailoptions-callback)
-- [`reportTrialBalance`](#reporttrialbalanceoptions-callback)
-- [`reportCashFlow`](#reportcashflowoptions-callback)
-- [`reportInventoryValuationSummary`](#reportinventoryvaluationsummaryoptions-callback)
-- [`reportCustomerSales`](#reportcustomersalesoptions-callback)
-- [`reportItemSales`](#reportitemsalesoptions-callback)
-- [`reportCustomerIncome`](#reportcustomerincomeoptions-callback)
-- [`reportCustomerBalance`](#reportcustomerbalanceoptions-callback)
-- [`reportCustomerBalanceDetail`](#reportcustomerbalancedetailoptions-callback)
-- [`reportAgedReceivables`](#reportagedreceivablesoptions-callback)
-- [`reportAgedReceivableDetail`](#reportagedreceivabledetailoptions-callback)
-- [`reportVendorBalance`](#reportvendorbalanceoptions-callback)
-- [`reportVendorBalanceDetail`](#reportvendorbalancedetailoptions-callback)
-- [`reportAgedPayables`](#reportagedpayablesoptions-callback)
-- [`reportAgedPayableDetail`](#reportagedpayabledetailoptions-callback)
-- [`reportVendorExpenses`](#reportvendorexpensesoptions-callback)
-- [`reportTransactionList`](#reporttransactionlistoptions-callback)
-- [`reportGeneralLedgerDetail`](#reportgeneralledgerdetailoptions-callback)
-- [`reportDepartmentSales`](#reportdepartmentsalesoptions-callback)
-- [`reportClassSales`](#reportclasssalesoptions-callback)
+- [`reportBalanceSheet`](#reportbalancesheetoptions)
+- [`reportProfitAndLoss`](#reportprofitandlossoptions)
+- [`reportProfitAndLossDetail`](#reportprofitandlossdetailoptions)
+- [`reportTrialBalance`](#reporttrialbalanceoptions)
+- [`reportCashFlow`](#reportcashflowoptions)
+- [`reportInventoryValuationSummary`](#reportinventoryvaluationsummaryoptions)
+- [`reportCustomerSales`](#reportcustomersalesoptions)
+- [`reportItemSales`](#reportitemsalesoptions)
+- [`reportCustomerIncome`](#reportcustomerincomeoptions)
+- [`reportCustomerBalance`](#reportcustomerbalanceoptions)
+- [`reportCustomerBalanceDetail`](#reportcustomerbalancedetailoptions)
+- [`reportAgedReceivables`](#reportagedreceivablesoptions)
+- [`reportAgedReceivableDetail`](#reportagedreceivabledetailoptions)
+- [`reportVendorBalance`](#reportvendorbalanceoptions)
+- [`reportVendorBalanceDetail`](#reportvendorbalancedetailoptions)
+- [`reportAgedPayables`](#reportagedpayablesoptions)
+- [`reportAgedPayableDetail`](#reportagedpayabledetailoptions)
+- [`reportVendorExpenses`](#reportvendorexpensesoptions)
+- [`reportTransactionList`](#reporttransactionlistoptions)
+- [`reportGeneralLedgerDetail`](#reportgeneralledgerdetailoptions)
+- [`reportDepartmentSales`](#reportdepartmentsalesoptions)
+- [`reportClassSales`](#reportclasssalesoptions)
 
 #### SalesReceipt and Invoice PDFs
 
-- [`getInvoicePdf`](#getinvoicepdfid-callback)
-- [`getCreditMemoPdf`](#getinvoicepdfid-callback)
-- [`getSalesReceiptPdf`](#getsalesreceiptpdfid-callback)
-- [`sendInvoicePdf`](#sendinvoicepdfid-sendto-callback)
-- [`sendCreditMemoPdf`](#sendcreditmemopdfid-sendto-callback)
-- [`sendEstimatePdf`](#sendestimatepdfid-sendto-callback)
-- [`sendSalesReceiptPdf`](#sendsalesreceiptpdfid-sendto-callback)
+- [`getInvoicePdf`](#getinvoicepdfid)
+- [`getCreditMemoPdf`](#getinvoicepdfid)
+- [`getSalesReceiptPdf`](#getsalesreceiptpdfid)
+- [`sendInvoicePdf`](#sendinvoicepdfid-sendto)
+- [`sendCreditMemoPdf`](#sendcreditmemopdfid-sendto)
+- [`sendEstimatePdf`](#sendestimatepdfid-sendto)
+- [`sendSalesReceiptPdf`](#sendsalesreceiptpdfid-sendto)
 
 ### Purchase Order Email
 
-- [`sendPurchaseOrder`](#sendpurchaseorderid-sendto-callback)
+- [`sendPurchaseOrder`](#sendpurchaseorderid-sendto)
 
 #### Miscellaneous
 
-- [`batch`](#batchitems-callback)
-- [`changeDataCapture`](#changedatacaptureentities-since-callback)
+- [`batch`](#batchitems)
+- [`changeDataCapture`](#changedatacaptureentities-since)
 
-#### createAccount(object, callback)
+#### createAccount(object)
 
 Creates the Account in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved account, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Account
 
-#### createAttachable(object, callback)
+#### createAttachable(object)
 
 Creates the Attachable in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved attachable, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Attachable
 
-#### createBill(object, callback)
+#### createBill(object)
 
 Creates the Bill in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved bill, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Bill
 
-#### createBillPayment(object, callback)
+#### createBillPayment(object)
 
 Creates the BillPayment in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved billPayment, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent BillPayment
 
-#### createClass(object, callback)
+#### createClass(object)
 
 Creates the Class in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved class, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Class
 
-#### createCreditMemo(object, callback)
+#### createCreditMemo(object)
 
 Creates the CreditMemo in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved creditMemo, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent CreditMemo
 
-#### createCustomer(object, callback)
+#### createCustomer(object)
 
 Creates the Customer in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved customer, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Customer
 
-#### createDepartment(object, callback)
+#### createDepartment(object)
 
 Creates the Department in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved department, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Department
 
-#### createDeposit(object, callback)
+#### createDeposit(object)
 
 Creates the Deposit in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved deposit, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Deposit
 
-#### createEmployee(object, callback)
+#### createEmployee(object)
 
 Creates the Employee in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved employee, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Employee
 
-#### createEstimate(object, callback)
+#### createEstimate(object)
 
 Creates the Estimate in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved estimate, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Estimate
 
-#### createInvoice(object, callback)
+#### createInvoice(object)
 
 Creates the Invoice in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved invoice, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Invoice
 
-#### createItem(object, callback)
+#### createItem(object)
 
 Creates the Item in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved item, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Item
 
-#### createJournalCode(object, callback)
+#### createJournalCode(object)
 
 Creates the JournalCode in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved journalCode, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent JournalCode
 
-#### createJournalEntry(object, callback)
+#### createJournalEntry(object)
 
 Creates the JournalEntry in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved journalEntry, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent JournalEntry
 
-#### createPayment(object, callback)
+#### createPayment(object)
 
 Creates the Payment in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved payment, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Payment
 
-#### createPaymentMethod(object, callback)
+#### createPaymentMethod(object)
 
 Creates the PaymentMethod in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved paymentMethod, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent PaymentMethod
 
-#### createPurchase(object, callback)
+#### createPurchase(object)
 
 Creates the Purchase in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved purchase, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Purchase
 
-#### createPurchaseOrder(object, callback)
+#### createPurchaseOrder(object)
 
 Creates the PurchaseOrder in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved purchaseOrder, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent PurchaseOrder
 
-#### createRefundReceipt(object, callback)
+#### createRefundReceipt(object)
 
 Creates the RefundReceipt in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved refundReceipt, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent RefundReceipt
 
-#### createSalesReceipt(object, callback)
+#### createSalesReceipt(object)
 
 Creates the SalesReceipt in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved salesReceipt, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent SalesReceipt
 
-#### createTaxAgency(object, callback)
+#### createTaxAgency(object)
 
 Creates the TaxAgency in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved taxAgency, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent TaxAgency
 
-#### createTaxService(object, callback)
+#### createTaxService(object)
 
 Creates the TaxService in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved taxService, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent TaxService
 
-#### createTerm(object, callback)
+#### createTerm(object)
 
 Creates the Term in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved term, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Term
 
-#### createTimeActivity(object, callback)
+#### createTimeActivity(object)
 
 Creates the TimeActivity in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved timeActivity, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent TimeActivity
 
-#### createTransfer(object, callback)
+#### createTransfer(object)
 
 Creates the Transfer in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved transfer, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Transfer
 
-#### createVendor(object, callback)
+#### createVendor(object)
 
 Creates the Vendor in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved vendor, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent Vendor
 
-#### createVendorCredit(object, callback)
+#### createVendorCredit(object)
 
 Creates the VendorCredit in QuickBooks
 
 **Arguments**
 
 - `object` - The unsaved vendorCredit, to be persisted in QuickBooks
-- `callback` - Callback function which is called with any error and the persistent VendorCredit
 
-#### getAccount(id, callback)
+#### getAccount(id)
 
 Retrieves the Account from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Account
-- `callback` - Callback function which is called with any error and the persistent Account
 
-#### getAttachable(id, callback)
+#### getAttachable(id)
 
 Retrieves the Attachable from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Attachable
-- `callback` - Callback function which is called with any error and the persistent Attachable
 
-#### getBill(id, callback)
+#### getBill(id)
 
 Retrieves the Bill from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Bill
-- `callback` - Callback function which is called with any error and the persistent Bill
 
-#### getBillPayment(id, callback)
+#### getBillPayment(id)
 
 Retrieves the BillPayment from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent BillPayment
-- `callback` - Callback function which is called with any error and the persistent BillPayment
 
-#### getClass(id, callback)
+#### getClass(id)
 
 Retrieves the Class from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Class
-- `callback` - Callback function which is called with any error and the persistent Class
 
-#### getCompanyInfo(id, callback)
+#### getCompanyInfo(id)
 
 Retrieves the CompanyInfo from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent CompanyInfo
-- `callback` - Callback function which is called with any error and the persistent CompanyInfo
 
-#### getCreditMemo(id, callback)
+#### getCreditMemo(id)
 
 Retrieves the CreditMemo from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent CreditMemo
-- `callback` - Callback function which is called with any error and the persistent CreditMemo
 
-#### getCustomer(id, callback)
+#### getCustomer(id)
 
 Retrieves the Customer from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Customer
-- `callback` - Callback function which is called with any error and the persistent Customer
 
-#### getDepartment(id, callback)
+#### getDepartment(id)
 
 Retrieves the Department from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Department
-- `callback` - Callback function which is called with any error and the persistent Department
 
-#### getDeposit(id, callback)
+#### getDeposit(id)
 
 Retrieves the Deposit from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Deposit
-- `callback` - Callback function which is called with any error and the persistent Deposit
 
-#### getEmployee(id, callback)
+#### getEmployee(id)
 
 Retrieves the Employee from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Employee
-- `callback` - Callback function which is called with any error and the persistent Employee
 
-#### getEstimate(id, callback)
+#### getEstimate(id)
 
 Retrieves the Estimate from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Estimate
-- `callback` - Callback function which is called with any error and the persistent Estimate
 
-#### getExchangeRate(options, callback)
+#### getExchangeRate(options)
 
 Retrieves an ExchangeRate from QuickBooks
 
 **Arguments**
 
 - `options` - An object with options including the required `sourcecurrencycode` parameter and optional `asofdate` parameter.
-- `callback` - Callback function which is called with any error and the ExchangeRate
 
-#### getInvoice(id, callback)
+#### getInvoice(id)
 
 Retrieves the Invoice from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Invoice
-- `callback` - Callback function which is called with any error and the persistent Invoice
 
-#### getItem(id, callback)
+#### getItem(id)
 
 Retrieves the Item from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Item
-- `callback` - Callback function which is called with any error and the persistent Item
 
-#### getJournalCode(id, callback)
+#### getJournalCode(id)
 
 Retrieves the JournalCode from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent JournalCode
-- `callback` - Callback function which is called with any error and the persistent JournalCode
 
-#### getJournalEntry(id, callback)
+#### getJournalEntry(id)
 
 Retrieves the JournalEntry from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent JournalEntry
-- `callback` - Callback function which is called with any error and the persistent JournalEntry
 
-#### getPayment(id, callback)
+#### getPayment(id)
 
 Retrieves the Payment from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Payment
-- `callback` - Callback function which is called with any error and the persistent Payment
 
-#### getPaymentMethod(id, callback)
+#### getPaymentMethod(id)
 
 Retrieves the PaymentMethod from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent PaymentMethod
-- `callback` - Callback function which is called with any error and the persistent PaymentMethod
 
-#### getPreferences(callback)
+#### getPreference)
 
 Retrieves the Preferences from QuickBooks
 
 **Arguments**
 
-- `callback` - Callback function which is called with any error and the Preferences of the authorised realm
+ the authorised realm
 
-#### getPurchase(id, callback)
+#### getPurchase(id)
 
 Retrieves the Purchase from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Purchase
-- `callback` - Callback function which is called with any error and the persistent Purchase
 
-#### getPurchaseOrder(id, callback)
+#### getPurchaseOrder(id)
 
 Retrieves the PurchaseOrder from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent PurchaseOrder
-- `callback` - Callback function which is called with any error and the persistent PurchaseOrder
 
-#### getRefundReceipt(id, callback)
+#### getRefundReceipt(id)
 
 Retrieves the RefundReceipt from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent RefundReceipt
-- `callback` - Callback function which is called with any error and the persistent RefundReceipt
 
-#### getReports(id, callback)
+#### getReports(id)
 
 Retrieves the Reports from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Reports
-- `callback` - Callback function which is called with any error and the persistent Reports
 
-#### getSalesReceipt(id, callback)
+#### getSalesReceipt(id)
 
 Retrieves the SalesReceipt from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent SalesReceipt
-- `callback` - Callback function which is called with any error and the persistent SalesReceipt
 
-#### getTaxAgency(id, callback)
+#### getTaxAgency(id)
 
 Retrieves the TaxAgency from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent TaxAgency
-- `callback` - Callback function which is called with any error and the persistent TaxAgency
 
-#### getTaxCode(id, callback)
+#### getTaxCode(id)
 
 Retrieves the TaxCode from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent TaxCode
-- `callback` - Callback function which is called with any error and the persistent TaxCode
 
-#### getTaxRate(id, callback)
+#### getTaxRate(id)
 
 Retrieves the TaxRate from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent TaxRate
-- `callback` - Callback function which is called with any error and the persistent TaxRate
 
-#### getTerm(id, callback)
+#### getTerm(id)
 
 Retrieves the Term from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Term
-- `callback` - Callback function which is called with any error and the persistent Term
 
-#### getTimeActivity(id, callback)
+#### getTimeActivity(id)
 
 Retrieves the TimeActivity from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent TimeActivity
-- `callback` - Callback function which is called with any error and the persistent TimeActivity
 
-#### getTransfer(id, callback)
+#### getTransfer(id)
 
 Retrieves the Transfer from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Transfer
-- `callback` - Callback function which is called with any error and the persistent Transfer
 
-#### getVendor(id, callback)
+#### getVendor(id)
 
 Retrieves the Vendor from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Vendor
-- `callback` - Callback function which is called with any error and the persistent Vendor
 
-#### getVendorCredit(id, callback)
+#### getVendorCredit(id)
 
 Retrieves the VendorCredit from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent VendorCredit
-- `callback` - Callback function which is called with any error and the persistent VendorCredit
 
-#### updateAccount(object, callback)
+#### updateAccount(object)
 
 Updates QuickBooks version of Account
 
 **Arguments**
 
 - `object` - The persistent Account, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Account
 
-#### updateAttachable(object, callback)
+#### updateAttachable(object)
 
 Updates QuickBooks version of Attachable
 
 **Arguments**
 
 - `object` - The persistent Attachable, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Attachable
 
-#### updateBill(object, callback)
+#### updateBill(object)
 
 Updates QuickBooks version of Bill
 
 **Arguments**
 
 - `object` - The persistent Bill, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Bill
 
-#### updateBillPayment(object, callback)
+#### updateBillPayment(object)
 
 Updates QuickBooks version of BillPayment
 
 **Arguments**
 
 - `object` - The persistent BillPayment, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated BillPayment
 
-#### updateClass(object, callback)
+#### updateClass(object)
 
 Updates QuickBooks version of Class
 
 **Arguments**
 
 - `object` - The persistent Class, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Class
 
-#### updateCompanyInfo(object, callback)
+#### updateCompanyInfo(object)
 
 Updates QuickBooks version of CompanyInfo
 
 **Arguments**
 
 - `object` - The persistent CompanyInfo, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated CompanyInfo
 
-#### updateCreditMemo(object, callback)
+#### updateCreditMemo(object)
 
 Updates QuickBooks version of CreditMemo
 
 **Arguments**
 
 - `object` - The persistent CreditMemo, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated CreditMemo
 
-#### updateCustomer(object, callback)
+#### updateCustomer(object)
 
 Updates QuickBooks version of Customer
 
 **Arguments**
 
 - `object` - The persistent Customer, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Customer
 
-#### updateDepartment(object, callback)
+#### updateDepartment(object)
 
 Updates QuickBooks version of Department
 
 **Arguments**
 
 - `object` - The persistent Department, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Department
 
-#### updateDeposit(object, callback)
+#### updateDeposit(object)
 
 Updates QuickBooks version of Deposit
 
 **Arguments**
 
 - `object` - The persistent Deposit, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Deposit
 
-#### updateEmployee(object, callback)
+#### updateEmployee(object)
 
 Updates QuickBooks version of Employee
 
 **Arguments**
 
 - `object` - The persistent Employee, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Employee
 
-#### updateEstimate(object, callback)
+#### updateEstimate(object)
 
 Updates QuickBooks version of Estimate
 
 **Arguments**
 
 - `object` - The persistent Estimate, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Estimate
 
-#### updateInvoice(object, callback)
+#### updateInvoice(object)
 
 Updates QuickBooks version of Invoice
 
 **Arguments**
 
 - `object` - The persistent Invoice, including Id and SyncToken fields. To void invoice set `void:true` in the object.
-- `callback` - Callback function which is called with any error and the updated Invoice
 
-#### updateItem(object, callback)
+#### updateItem(object)
 
 Updates QuickBooks version of Item
 
 **Arguments**
 
 - `object` - The persistent Item, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Item
 
-#### updateJournalCode(object, callback)
+#### updateJournalCode(object)
 
 Updates QuickBooks version of JournalCode
 
 **Arguments**
 
 - `object` - The persistent JournalCode, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated JournalCode
 
-#### updateJournalEntry(object, callback)
+#### updateJournalEntry(object)
 
 Updates QuickBooks version of JournalEntry
 
 **Arguments**
 
 - `object` - The persistent JournalEntry, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated JournalEntry
 
-#### updatePayment(object, callback)
+#### updatePayment(object)
 
 Updates QuickBooks version of Payment
 
 **Arguments**
 
 - `object` - The persistent Payment, including Id and SyncToken fields. To void payment set `void:true` in the object.
-- `callback` - Callback function which is called with any error and the updated Payment
 
-#### updatePaymentMethod(object, callback)
+#### updatePaymentMethod(object)
 
 Updates QuickBooks version of PaymentMethod
 
 **Arguments**
 
 - `object` - The persistent PaymentMethod, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated PaymentMethod
 
-#### updatePreferences(object, callback)
+#### updatePreferences(object)
 
 Updates QuickBooks version of Preferences
 
 **Arguments**
 
 - `object` - The persistent Preferences, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Preferences
 
-#### updatePurchase(object, callback)
+#### updatePurchase(object)
 
 Updates QuickBooks version of Purchase
 
 **Arguments**
 
 - `object` - The persistent Purchase, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Purchase
 
-#### updatePurchaseOrder(object, callback)
+#### updatePurchaseOrder(object)
 
 Updates QuickBooks version of PurchaseOrder
 
 **Arguments**
 
 - `object` - The persistent PurchaseOrder, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated PurchaseOrder
 
-#### updateRefundReceipt(object, callback)
+#### updateRefundReceipt(object)
 
 Updates QuickBooks version of RefundReceipt
 
 **Arguments**
 
 - `object` - The persistent RefundReceipt, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated RefundReceipt
 
-#### updateSalesReceipt(object, callback)
+#### updateSalesReceipt(object)
 
 Updates QuickBooks version of SalesReceipt
 
 **Arguments**
 
 - `object` - The persistent SalesReceipt, including Id and SyncToken fields. To void sales receipt set `void:true` in the object.
-- `callback` - Callback function which is called with any error and the updated SalesReceipt
 
-#### updateTaxAgency(object, callback)
+#### updateTaxAgency(object)
 
 Updates QuickBooks version of TaxAgency
 
 **Arguments**
 
 - `object` - The persistent TaxAgency, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated TaxAgency
 
-#### updateTaxCode(object, callback)
+#### updateTaxCode(object)
 
 Updates QuickBooks version of TaxCode
 
 **Arguments**
 
 - `object` - The persistent TaxCode, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated TaxCode
 
-#### updateTaxRate(object, callback)
+#### updateTaxRate(object)
 
 Updates QuickBooks version of TaxRate
 
 **Arguments**
 
 - `object` - The persistent TaxRate, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated TaxRate
 
-#### updateTerm(object, callback)
+#### updateTerm(object)
 
 Updates QuickBooks version of Term
 
 **Arguments**
 
 - `object` - The persistent Term, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Term
 
-#### updateTimeActivity(object, callback)
+#### updateTimeActivity(object)
 
 Updates QuickBooks version of TimeActivity
 
 **Arguments**
 
 - `object` - The persistent TimeActivity, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated TimeActivity
 
-#### updateTransfer(object, callback)
+#### updateTransfer(object)
 
 Updates QuickBooks version of Transfer
 
 **Arguments**
 
 - `object` - The persistent Transfer, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Transfer
 
-#### updateVendor(object, callback)
+#### updateVendor(object)
 
 Updates QuickBooks version of Vendor
 
 **Arguments**
 
 - `object` - The persistent Vendor, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated Vendor
 
-#### updateVendorCredit(object, callback)
+#### updateVendorCredit(object)
 
 Updates QuickBooks version of VendorCredit
 
 **Arguments**
 
 - `object` - The persistent VendorCredit, including Id and SyncToken fields
-- `callback` - Callback function which is called with any error and the updated VendorCredit
 
-#### updateExchangeRate(object, callback)
+#### updateExchangeRate(object)
 
 Updates QuickBooks version of ExchangeRate
 
 **Arguments**
 
 - `object` - The persistent ExchangeRate
-- `callback` - Callback function which is called with any error and the updated ExchangeRate
 
-#### deleteAttachable(idOrEntity, callback)
+#### deleteAttachable(idOrEntity)
 
 Deletes the Attachable from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Attachable to be deleted, or the Id of the Attachable, in which case an extra GET request will be issued to first retrieve the Attachable
-- `callback` - Callback function which is called with any error and the status of the persistent Attachable
 
-#### deleteBill(idOrEntity, callback)
+#### deleteBill(idOrEntity)
 
 Deletes the Bill from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Bill to be deleted, or the Id of the Bill, in which case an extra GET request will be issued to first retrieve the Bill
-- `callback` - Callback function which is called with any error and the status of the persistent Bill
 
-#### deleteBillPayment(idOrEntity, callback)
+#### deleteBillPayment(idOrEntity)
 
 Deletes the BillPayment from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent BillPayment to be deleted, or the Id of the BillPayment, in which case an extra GET request will be issued to first retrieve the BillPayment
-- `callback` - Callback function which is called with any error and the status of the persistent BillPayment
 
-#### deleteCreditMemo(idOrEntity, callback)
+#### deleteCreditMemo(idOrEntity)
 
 Deletes the CreditMemo from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent CreditMemo to be deleted, or the Id of the CreditMemo, in which case an extra GET request will be issued to first retrieve the CreditMemo
-- `callback` - Callback function which is called with any error and the status of the persistent CreditMemo
 
-#### deleteDeposit(idOrEntity, callback)
+#### deleteDeposit(idOrEntity)
 
 Deletes the Deposit from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Deposit to be deleted, or the Id of the Deposit, in which case an extra GET request will be issued to first retrieve the Deposit
-- `callback` - Callback function which is called with any error and the status of the persistent Deposit
 
-#### deleteEstimate(idOrEntity, callback)
+#### deleteEstimate(idOrEntity)
 
 Deletes the Estimate from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Estimate to be deleted, or the Id of the Estimate, in which case an extra GET request will be issued to first retrieve the Estimate
-- `callback` - Callback function which is called with any error and the status of the persistent Estimate
 
-#### deleteInvoice(idOrEntity, callback)
+#### deleteInvoice(idOrEntity)
 
 Deletes the Invoice from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Invoice to be deleted, or the Id of the Invoice, in which case an extra GET request will be issued to first retrieve the Invoice
-- `callback` - Callback function which is called with any error and the status of the persistent Invoice
 
-#### deleteJournalCode(idOrEntity, callback)
+#### deleteJournalCode(idOrEntity)
 
 Deletes the JournalCode from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent JournalCode to be deleted, or the Id of the JournalCode, in which case an extra GET request will be issued to first retrieve the JournalCode
-- `callback` - Callback function which is called with any error and the status of the persistent JournalCode
 
-#### deleteJournalEntry(idOrEntity, callback)
+#### deleteJournalEntry(idOrEntity)
 
 Deletes the JournalEntry from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent JournalEntry to be deleted, or the Id of the JournalEntry, in which case an extra GET request will be issued to first retrieve the JournalEntry
-- `callback` - Callback function which is called with any error and the status of the persistent JournalEntry
 
-#### deletePayment(idOrEntity, callback)
+#### deletePayment(idOrEntity)
 
 Deletes the Payment from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Payment to be deleted, or the Id of the Payment, in which case an extra GET request will be issued to first retrieve the Payment
-- `callback` - Callback function which is called with any error and the status of the persistent Payment
 
-#### deletePurchase(idOrEntity, callback)
+#### deletePurchase(idOrEntity)
 
 Deletes the Purchase from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Purchase to be deleted, or the Id of the Purchase, in which case an extra GET request will be issued to first retrieve the Purchase
-- `callback` - Callback function which is called with any error and the status of the persistent Purchase
 
-#### deletePurchaseOrder(idOrEntity, callback)
+#### deletePurchaseOrder(idOrEntity)
 
 Deletes the PurchaseOrder from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent PurchaseOrder to be deleted, or the Id of the PurchaseOrder, in which case an extra GET request will be issued to first retrieve the PurchaseOrder
-- `callback` - Callback function which is called with any error and the status of the persistent PurchaseOrder
 
-#### deleteRefundReceipt(idOrEntity, callback)
+#### deleteRefundReceipt(idOrEntity)
 
 Deletes the RefundReceipt from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent RefundReceipt to be deleted, or the Id of the RefundReceipt, in which case an extra GET request will be issued to first retrieve the RefundReceipt
-- `callback` - Callback function which is called with any error and the status of the persistent RefundReceipt
 
-#### deleteSalesReceipt(idOrEntity, callback)
+#### deleteSalesReceipt(idOrEntity)
 
 Deletes the SalesReceipt from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent SalesReceipt to be deleted, or the Id of the SalesReceipt, in which case an extra GET request will be issued to first retrieve the SalesReceipt
-- `callback` - Callback function which is called with any error and the status of the persistent SalesReceipt
 
-#### deleteTimeActivity(idOrEntity, callback)
+#### deleteTimeActivity(idOrEntity)
 
 Deletes the TimeActivity from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent TimeActivity to be deleted, or the Id of the TimeActivity, in which case an extra GET request will be issued to first retrieve the TimeActivity
-- `callback` - Callback function which is called with any error and the status of the persistent TimeActivity
 
-#### deleteTransfer(idOrEntity, callback)
+#### deleteTransfer(idOrEntity)
 
 Deletes the Transfer from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent Transfer to be deleted, or the Id of the Transfer, in which case an extra GET request will be issued to first retrieve the Transfer
-- `callback` - Callback function which is called with any error and the status of the persistent Transfer
 
-#### deleteVendorCredit(idOrEntity, callback)
+#### deleteVendorCredit(idOrEntity)
 
 Deletes the VendorCredit from QuickBooks
 
 **Arguments**
 
 - `idOrEntity` - The persistent VendorCredit to be deleted, or the Id of the VendorCredit, in which case an extra GET request will be issued to first retrieve the VendorCredit
-- `callback` - Callback function which is called with any error and the status of the persistent VendorCredit
 
-#### findAccounts(criteria, callback)
+#### findAccounts(criteria)
 
 Finds all Accounts in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Accounts
 
-#### findAttachables(criteria, callback)
+#### findAttachables(criteria)
 
 Finds all Attachables in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Attachables
 
-#### findBills(criteria, callback)
+#### findBills(criteria)
 
 Finds all Bills in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Bills
 
-#### findBillPayments(criteria, callback)
+#### findBillPayments(criteria)
 
 Finds all BillPayments in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of BillPayments
 
-#### findBudgets(criteria, callback)
+#### findBudgets(criteria)
 
 Finds all Budgets in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Budgets
 
-#### findClasses(criteria, callback)
+#### findClasses(criteria)
 
 Finds all Classs in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Classes
 
-#### findCompanyInfos(criteria, callback)
+#### findCompanyInfos(criteria)
 
 Finds all CompanyInfos in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of CompanyInfos
 
-#### findCreditMemos(criteria, callback)
+#### findCreditMemos(criteria)
 
 Finds all CreditMemos in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of CreditMemos
 
-#### findCustomers(criteria, callback)
+#### findCustomers(criteria)
 
 Finds all Customers in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Customers
 
-#### findDepartments(criteria, callback)
+#### findDepartments(criteria)
 
 Finds all Departments in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Departments
 
-#### findDeposits(criteria, callback)
+#### findDeposits(criteria)
 
 Finds all Deposits in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Deposits
 
-#### findEmployees(criteria, callback)
+#### findEmployees(criteria)
 
 Finds all Employees in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Employees
 
-#### findEstimates(criteria, callback)
+#### findEstimates(criteria)
 
 Finds all Estimates in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Estimates
 
-#### findInvoices(criteria, callback)
+#### findInvoices(criteria)
 
 Finds all Invoices in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Invoices
 
-#### findItems(criteria, callback)
+#### findItems(criteria)
 
 Finds all Items in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Items
 
-#### findJournalCodes(criteria, callback)
+#### findJournalCodes(criteria)
 
 Finds all JournalCodes in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of JournalCodes
 
-#### findJournalEntries(criteria, callback)
+#### findJournalEntries(criteria)
 
 Finds all JournalEntrys in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of JournalEntries
 
-#### findPayments(criteria, callback)
+#### findPayments(criteria)
 
 Finds all Payments in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Payments
 
-#### findPaymentMethods(criteria, callback)
+#### findPaymentMethods(criteria)
 
 Finds all PaymentMethods in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of PaymentMethods
 
-#### findPreferenceses(criteria, callback)
+#### findPreferenceses(criteria)
 
 Finds all Preferencess in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Preferences
 
-#### findPurchases(criteria, callback)
+#### findPurchases(criteria)
 
 Finds all Purchases in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Purchases
 
-#### findPurchaseOrders(criteria, callback)
+#### findPurchaseOrders(criteria)
 
 Finds all PurchaseOrders in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of PurchaseOrders
 
-#### findRefundReceipts(criteria, callback)
+#### findRefundReceipts(criteria)
 
 Finds all RefundReceipts in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of RefundReceipts
 
-#### findSalesReceipts(criteria, callback)
+#### findSalesReceipts(criteria)
 
 Finds all SalesReceipts in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of SalesReceipts
 
-#### findTaxAgencies(criteria, callback)
+#### findTaxAgencies(criteria)
 
 Finds all TaxAgencys in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of TaxAgencies
 
-#### findTaxCodes(criteria, callback)
+#### findTaxCodes(criteria)
 
 Finds all TaxCodes in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of TaxCodes
 
-#### findTaxRates(criteria, callback)
+#### findTaxRates(criteria)
 
 Finds all TaxRates in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of TaxRates
 
-#### findTerms(criteria, callback)
+#### findTerms(criteria)
 
 Finds all Terms in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Terms
 
-#### findTimeActivities(criteria, callback)
+#### findTimeActivities(criteria)
 
 Finds all TimeActivitys in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of TimeActivities
 
-#### findVendors(criteria, callback)
+#### findVendors(criteria)
 
 Finds all Vendors in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of Vendors
 
-#### findVendorCredits(criteria, callback)
+#### findVendorCredits(criteria)
 
 Finds all VendorCredits in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of VendorCredits
 
-#### findExchangeRates(criteria, callback)
+#### findExchangeRates(criteria)
 
 Finds all ExchangeRates in QuickBooks, optionally matching the specified criteria
 
 **Arguments**
 
 - `criteria` - (Optional) String or single-valued map converted to a where clause of the form "where key = 'value'"
-- `callback` - Callback function which is called with any error and the list of ExchangeRates
 
-#### reportBalanceSheet(options, callback)
+#### reportBalanceSheet(options)
 
 Retrieves the BalanceSheet Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the BalanceSheet Report
 
-#### reportProfitAndLoss(options, callback)
+#### reportProfitAndLoss(options)
 
 Retrieves the ProfitAndLoss Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the ProfitAndLoss Report
 
-#### reportProfitAndLossDetail(options, callback)
+#### reportProfitAndLossDetail(options)
 
 Retrieves the ProfitAndLossDetail Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the ProfitAndLossDetail Report
 
-#### reportTrialBalance(options, callback)
+#### reportTrialBalance(options)
 
 Retrieves the TrialBalance Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the TrialBalance Report
 
-#### reportCashFlow(options, callback)
+#### reportCashFlow(options)
 
 Retrieves the CashFlow Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the CashFlow Report
 
-#### reportInventoryValuationSummary(options, callback)
+#### reportInventoryValuationSummary(options)
 
 Retrieves the InventoryValuationSummary Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the InventoryValuationSummary Report
 
-#### reportCustomerSales(options, callback)
+#### reportCustomerSales(options)
 
 Retrieves the CustomerSales Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the CustomerSales Report
 
-#### reportItemSales(options, callback)
+#### reportItemSales(options)
 
 Retrieves the ItemSales Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the ItemSales Report
 
-#### reportCustomerIncome(options, callback)
+#### reportCustomerIncome(options)
 
 Retrieves the CustomerIncome Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the CustomerIncome Report
 
-#### reportCustomerBalance(options, callback)
+#### reportCustomerBalance(options)
 
 Retrieves the CustomerBalance Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the CustomerBalance Report
 
-#### reportCustomerBalanceDetail(options, callback)
+#### reportCustomerBalanceDetail(options)
 
 Retrieves the CustomerBalanceDetail Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the CustomerBalanceDetail Report
 
-#### reportAgedReceivables(options, callback)
+#### reportAgedReceivables(options)
 
 Retrieves the AgedReceivables Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the AgedReceivables Report
 
-#### reportAgedReceivableDetail(options, callback)
+#### reportAgedReceivableDetail(options)
 
 Retrieves the AgedReceivableDetail Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the AgedReceivableDetail Report
 
-#### reportVendorBalance(options, callback)
+#### reportVendorBalance(options)
 
 Retrieves the VendorBalance Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the VendorBalance Report
 
-#### reportVendorBalanceDetail(options, callback)
+#### reportVendorBalanceDetail(options)
 
 Retrieves the VendorBalanceDetail Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the VendorBalanceDetail Report
 
-#### reportAgedPayables(options, callback)
+#### reportAgedPayables(options)
 
 Retrieves the AgedPayables Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the AgedPayables Report
 
-#### reportAgedPayableDetail(options, callback)
+#### reportAgedPayableDetail(options)
 
 Retrieves the AgedPayableDetail Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the AgedPayableDetail Report
 
-#### reportVendorExpenses(options, callback)
+#### reportVendorExpenses(options)
 
 Retrieves the VendorExpenses Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the VendorExpenses Report
 
-#### reportTransactionList(options, callback)
+#### reportTransactionList(options)
 
 Retrieves the TransactionList Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the TransactionList Report
 
-#### reportGeneralLedgerDetail(options, callback)
+#### reportGeneralLedgerDetail(options)
 
 Retrieves the GeneralLedgerDetail Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the GeneralLedgerDetail Report
 
-#### reportDepartmentSales(options, callback)
+#### reportDepartmentSales(options)
 
 Retrieves the DepartmentSales Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the DepartmentSales Report
 
-#### reportClassSales(options, callback)
+#### reportClassSales(options)
 
 Retrieves the ClassSales Report from QuickBooks
 
 **Arguments**
 
 - `options` - (Optional) Map of key-value pairs passed as options to the Report
-- `callback` - Callback function which is called with any error and the ClassSales Report
 
-#### getInvoicePdf(id, callback)
+#### getInvoicePdf(id)
 
 Retrieves the Invoice PDF from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Invoice
-- `callback` - Callback function which is called with any error and the Invoice PDF
 
-#### getCreditMemoPdf(id, callback)
+#### getCreditMemoPdf(id)
 
 Retrieves the Credit Memo PDF from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent Credit Memo
-- `callback` - Callback function which is called with any error and the Credit Memo PDF
+ PDF
 
-#### getSalesReceiptPdf(id, callback)
+#### getSalesReceiptPdf(id)
 
 Retrieves the SalesReceipt PDF from QuickBooks
 
 **Arguments**
 
 - `id` - The Id of persistent SalesReceipt
-- `callback` - Callback function which is called with any error and the persistent SalesReceipt PDF
+ PDF
 
-#### sendInvoicePdf(id, sendTo, callback)
+#### sendInvoicePdf(id, sendTo)
 
 Emails the Invoice PDF from QuickBooks to the address supplied in Invoice.BillEmail.EmailAddress or the specified 'sendTo' address
 
@@ -1928,9 +1758,8 @@ Emails the Invoice PDF from QuickBooks to the address supplied in Invoice.BillEm
 
 - `Id` - The Id of persistent Invoice
 - `sendTo` - (Optional) optional email address to send the PDF to. If not provided, address supplied in Invoice.BillEmail.EmailAddress will be used
-- `callback` - Callback function which is called with any error and the Invoice PDF
 
-#### sendCreditMemoPdf(id, sendTo, callback)
+#### sendCreditMemoPdf(id, sendTo)
 
 Emails the Credit Memo PDF from QuickBooks to the address supplied in CreditMemo.BillEmail.EmailAddress or the specified 'sendTo' address
 
@@ -1938,9 +1767,9 @@ Emails the Credit Memo PDF from QuickBooks to the address supplied in CreditMemo
 
 - `Id` - The Id of persistent Credit Memo
 - `sendTo` - (Optional) optional email address to send the PDF to. If not provided, address supplied in Credit Memo.BillEmail.EmailAddress will be used
-- `callback` - Callback function which is called with any error and the Credit Memo PDF
+ PDF
 
-#### sendEstimatePdf(id, sendTo, callback)
+#### sendEstimatePdf(id, sendTo)
 
 Emails the Estimate PDF from QuickBooks to the address supplied in Estimate.BillEmail.EmailAddress or the specified 'sendTo' address
 
@@ -1948,9 +1777,8 @@ Emails the Estimate PDF from QuickBooks to the address supplied in Estimate.Bill
 
 - `Id` - The Id of persistent Estimate
 - `sendTo` - (Optional) optional email address to send the PDF to. If not provided, address supplied in Estimate.BillEmail.EmailAddress will be used
-- `callback` - Callback function which is called with any error and the Estimate PDF
 
-#### sendSalesReceiptPdf(id, sendTo, callback)
+#### sendSalesReceiptPdf(id, sendTo)
 
 Emails the SalesReceipt PDF from QuickBooks to the address supplied in SalesReceipt.BillEmail.EmailAddress or the specified 'sendTo' address
 
@@ -1958,9 +1786,8 @@ Emails the SalesReceipt PDF from QuickBooks to the address supplied in SalesRece
 
 - `Id` - The Id of persistent SalesReceipt
 - `sendTo` - (Optional) optional email address to send the PDF to. If not provided, address supplied in SalesReceipt.BillEmail.EmailAddress will be used
-- `callback` - Callback function which is called with any error and the SalesReceipt PDF
 
-#### sendPurchaseOrder(id, sendTo, callback)
+#### sendPurchaseOrder(id, sendTo)
 
 Emails the Purchase Order from QuickBooks to the address supplied in PurchaseOrder.POEmail.Address or the specified 'sendTo' address
 
@@ -1968,9 +1795,8 @@ Emails the Purchase Order from QuickBooks to the address supplied in PurchaseOrd
 
 - `Id` - The Id of persistent Purchase Order
 - `sendTo` - (Optional) optional email address to send the email to. If not provided, address supplied in PurchaseOrder.POEmail.Address will be used
-- `callback` - Callback function which is called with any error and the PurchaseOrder PDF
 
-#### batch(items, callback)
+#### batch(items)
 
 Batch operation to enable an application to perform multiple operations in a single request. The following batch items are supported:
 
@@ -1979,14 +1805,13 @@ Batch operation to enable an application to perform multiple operations in a sin
 - delete
 - query
 
-* The maximum number of batch items in a single request is 30.
+- The maximum number of batch items in a single request is 30.
 
 **Arguments**
 
 - `items` - JavaScript array of batch items
-- `callback` - Callback function which is called with any error and list of BatchItemResponses
 
-#### changeDataCapture(entities, since, callback)
+#### changeDataCapture(entities, since)
 
 The change data capture (CDC) operation returns a list of entities that have changed since a specified time.
 
