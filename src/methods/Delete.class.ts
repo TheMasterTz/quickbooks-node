@@ -7,7 +7,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - attachable's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} attachable object response
    */
-  async deleteAttachable(idOrEntity: object | string): Promise<object> {
+  async deleteAttachable(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('attachable', idOrEntity);
   }
 
@@ -17,7 +17,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - bill's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} bill object response
    */
-  async deleteBill(idOrEntity: object | string): Promise<object> {
+  async deleteBill(idOrEntity: object | string | number | number): Promise<object> {
     return await this.delete('bill', idOrEntity);
   }
 
@@ -27,7 +27,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - billPayment's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} billPayment object response
    */
-  async deleteBillPayment(idOrEntity: object | string): Promise<object> {
+  async deleteBillPayment(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('billPayment', idOrEntity);
   }
 
@@ -37,7 +37,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - creditMemo's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} creditMemo object response
    */
-  async deleteCreditMemo(idOrEntity: object | string): Promise<object> {
+  async deleteCreditMemo(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('creditMemo', idOrEntity);
   }
 
@@ -47,7 +47,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - deposit's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} deposit object response
    */
-  async deleteDeposit(idOrEntity: object | string): Promise<object> {
+  async deleteDeposit(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('deposit', idOrEntity);
   }
 
@@ -57,7 +57,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - estimate's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} estimate object response
    */
-  async deleteEstimate(idOrEntity: object | string): Promise<object> {
+  async deleteEstimate(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('estimate', idOrEntity);
   }
 
@@ -67,7 +67,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - invoice's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} invoice object response
    */
-  async deleteInvoice(idOrEntity: object | string): Promise<object> {
+  async deleteInvoice(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('invoice', idOrEntity);
   }
 
@@ -77,7 +77,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - journalCode's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} journalCode object response
    */
-  async deleteJournalCode(idOrEntity: object | string): Promise<object> {
+  async deleteJournalCode(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('journalCode', idOrEntity);
   }
 
@@ -87,7 +87,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - journalEntry's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} journalEntry object response
    */
-  async deleteJournalEntry(idOrEntity: object | string): Promise<object> {
+  async deleteJournalEntry(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('journalEntry', idOrEntity);
   }
 
@@ -97,7 +97,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - payment's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} payment object response
    */
-  async deletePayment(idOrEntity: object | string): Promise<object> {
+  async deletePayment(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('payment', idOrEntity);
   }
 
@@ -107,7 +107,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - purchase's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} purchase object response
    */
-  async deletePurchase(idOrEntity: object | string): Promise<object> {
+  async deletePurchase(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('purchase', idOrEntity);
   }
 
@@ -117,7 +117,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - purchaseOrder's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} purchaseOrder object response
    */
-  async deletePurchaseOrder(idOrEntity: object | string): Promise<object> {
+  async deletePurchaseOrder(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('purchaseOrder', idOrEntity);
   }
 
@@ -127,7 +127,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - refundReceipt's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} refundReceipt object response
    */
-  async deleteRefundReceipt(idOrEntity: object | string): Promise<object> {
+  async deleteRefundReceipt(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('refundReceipt', idOrEntity);
   }
 
@@ -137,7 +137,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - salesReceipt's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} salesReceipt object response
    */
-  async deleteSalesReceipt(idOrEntity: object | string): Promise<object> {
+  async deleteSalesReceipt(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('salesReceipt', idOrEntity);
   }
 
@@ -147,7 +147,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - timeActivity's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} timeActivity object response
    */
-  async deleteTimeActivity(idOrEntity: object | string): Promise<object> {
+  async deleteTimeActivity(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('timeActivity', idOrEntity);
   }
 
@@ -157,7 +157,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - transfer's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} transfer object response
    */
-  async deleteTransfer(idOrEntity: object | string): Promise<object> {
+  async deleteTransfer(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('transfer', idOrEntity);
   }
 
@@ -167,7 +167,7 @@ export class DeleteQB extends UpdateQB {
    * @param {Object|String} idOrEntity - vendorCredit's ID or object to be removed from QuickBooks
    * @return {Promise<Object>} vendorCredit object response
    */
-  async deleteVendorCredit(idOrEntity: object | string): Promise<object> {
+  async deleteVendorCredit(idOrEntity: object | string | number): Promise<object> {
     return await this.delete('vendorCredit', idOrEntity);
   }
 }

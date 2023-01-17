@@ -1,7 +1,7 @@
 import { CreateQB } from './Create.class';
 
 export class ResponseQB extends CreateQB {
-  async getAccount(id: string): Promise<object> {
+  async getAccount(id: string | number): Promise<object> {
     return await this.read('account', id);
   }
 
@@ -11,7 +11,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - attachable's ID to be retrieved.
    * @return {Promise<Object>} attachable object response
    */
-  async getAttachable(id: string): Promise<object> {
+  async getAttachable(id: string | number): Promise<object> {
     return await this.read('attachable', id);
   }
 
@@ -21,7 +21,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - bill's ID to be retrieved.
    * @return {Promise<Object>} bill object response
    */
-  async getBill(id: string): Promise<object> {
+  async getBill(id: string | number): Promise<object> {
     return await this.read('bill', id);
   }
 
@@ -31,7 +31,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - billPayment's ID to be retrieved.
    * @return {Promise<Object>} billPayment object response
    */
-  async getBillPayment(id: string): Promise<object> {
+  async getBillPayment(id: string | number): Promise<object> {
     return await this.read('billPayment', id);
   }
 
@@ -41,7 +41,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - class's ID to be retrieved.
    * @return {Promise<Object>} class object response
    */
-  async getClass(id: string): Promise<object> {
+  async getClass(id: string | number): Promise<object> {
     return await this.read('class', id);
   }
 
@@ -51,7 +51,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - companyInfo's ID to be retrieved.
    * @return {Promise<Object>} companyInfo object response
    */
-  async getCompanyInfo(id: string): Promise<object> {
+  async getCompanyInfo(id: string | number): Promise<object> {
     return await this.read('companyInfo', id);
   }
 
@@ -61,7 +61,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - creditMemo's ID to be retrieved.
    * @return {Promise<Object>} creditMemo object response
    */
-  async getCreditMemo(id: string): Promise<object> {
+  async getCreditMemo(id: string | number): Promise<object> {
     return await this.read('creditMemo', id);
   }
 
@@ -71,7 +71,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - customer's ID to be retrieved.
    * @return {Promise<Object>} customer object response
    */
-  async getCustomer(id: string): Promise<object> {
+  async getCustomer(id: string | number): Promise<object> {
     return await this.read('customer', id);
   }
 
@@ -81,7 +81,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - department's ID to be retrieved.
    * @return {Promise<Object>} department object response
    */
-  async getDepartment(id: string): Promise<object> {
+  async getDepartment(id: string | number): Promise<object> {
     return await this.read('department', id);
   }
 
@@ -91,7 +91,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - deposit's ID to be retrieved.
    * @return {Promise<Object>} deposit object response
    */
-  async getDeposit(id: string): Promise<object> {
+  async getDeposit(id: string | number): Promise<object> {
     return await this.read('deposit', id);
   }
 
@@ -101,7 +101,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - employee's ID to be retrieved.
    * @return {Promise<Object>} employee object response
    */
-  async getEmployee(id: string): Promise<object> {
+  async getEmployee(id: string | number): Promise<object> {
     return await this.read('employee', id);
   }
 
@@ -111,7 +111,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - estimate's ID to be retrieved.
    * @return {Promise<Object>} estimate object response
    */
-  async getEstimate(id: string): Promise<object> {
+  async getEstimate(id: string | number): Promise<object> {
     return await this.read('estimate', id);
   }
 
@@ -121,7 +121,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - exchangeRate's ID to be retrieved.
    * @return {Promise<Object>} exchangeRate object response
    */
-  async getExchangeRate(id: string): Promise<object> {
+  async getExchangeRate(id: string | number): Promise<object> {
     return await this.read('exchangeRate', id);
   }
 
@@ -131,7 +131,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - invoice's ID to be retrieved.
    * @return {Promise<Object>} invoice object response
    */
-  async getInvoice(id: string): Promise<object> {
+  async getInvoice(id: string | number): Promise<object> {
     return await this.read('invoice', id);
   }
 
@@ -141,7 +141,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - item's ID to be retrieved.
    * @return {Promise<Object>} item object response
    */
-  async getItem(id: string): Promise<object> {
+  async getItem(id: string | number): Promise<object> {
     return await this.read('item', id);
   }
 
@@ -151,7 +151,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - journalCode's ID to be retrieved.
    * @return {Promise<Object>} journalCode object response
    */
-  async getJournalCode(id: string): Promise<object> {
+  async getJournalCode(id: string | number): Promise<object> {
     return await this.read('journalCode', id);
   }
 
@@ -161,7 +161,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - journalEntry's ID to be retrieved.
    * @return {Promise<Object>} journalEntry object response
    */
-  async getJournalEntry(id: string): Promise<object> {
+  async getJournalEntry(id: string | number): Promise<object> {
     return await this.read('journalEntry', id);
   }
 
@@ -171,7 +171,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - payment's ID to be retrieved.
    * @return {Promise<Object>} payment object response
    */
-  async getPayment(id: string): Promise<object> {
+  async getPayment(id: string | number): Promise<object> {
     return await this.read('payment', id);
   }
 
@@ -181,7 +181,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - paymentMethod's ID to be retrieved.
    * @return {Promise<Object>} paymentMethod object response
    */
-  async getPaymentMethod(id: string): Promise<object> {
+  async getPaymentMethod(id: string | number): Promise<object> {
     return await this.read('paymentMethod', id);
   }
 
@@ -191,7 +191,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - preferences's ID to be retrieved.
    * @return {Promise<Object>} preferences object response
    */
-  async getPreferences(id: string): Promise<object> {
+  async getPreferences(id: string | number): Promise<object> {
     return await this.read('preferences', id);
   }
 
@@ -201,7 +201,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - purchase's ID to be retrieved.
    * @return {Promise<Object>} purchase object response
    */
-  async getPurchase(id: string): Promise<object> {
+  async getPurchase(id: string | number): Promise<object> {
     return await this.read('purchase', id);
   }
 
@@ -211,7 +211,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - purchaseOrder's ID to be retrieved.
    * @return {Promise<Object>} purchaseOrder object response
    */
-  async getPurchaseOrder(id: string): Promise<object> {
+  async getPurchaseOrder(id: string | number): Promise<object> {
     return await this.read('purchaseOrder', id);
   }
 
@@ -221,7 +221,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - refundReceipt's ID to be retrieved.
    * @return {Promise<Object>} refundReceipt object response
    */
-  async getRefundReceipt(id: string): Promise<object> {
+  async getRefundReceipt(id: string | number): Promise<object> {
     return await this.read('refundReceipt', id);
   }
 
@@ -231,7 +231,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - reports's ID to be retrieved.
    * @return {Promise<Object>} reports object response
    */
-  async getReports(id: string): Promise<object> {
+  async getReports(id: string | number): Promise<object> {
     return await this.read('reports', id);
   }
 
@@ -241,7 +241,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - salesReceipt's ID to be retrieved.
    * @return {Promise<Object>} salesReceipt object response
    */
-  async getSalesReceipt(id: string): Promise<object> {
+  async getSalesReceipt(id: string | number): Promise<object> {
     return await this.read('salesReceipt', id);
   }
 
@@ -251,7 +251,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - taxAgency's ID to be retrieved.
    * @return {Promise<Object>} taxAgency object response
    */
-  async getTaxAgency(id: string): Promise<object> {
+  async getTaxAgency(id: string | number): Promise<object> {
     return await this.read('taxAgency', id);
   }
 
@@ -261,7 +261,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - taxCode's ID to be retrieved.
    * @return {Promise<Object>} taxCode object response
    */
-  async getTaxCode(id: string): Promise<object> {
+  async getTaxCode(id: string | number): Promise<object> {
     return await this.read('taxCode', id);
   }
 
@@ -271,7 +271,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - taxRate's ID to be retrieved.
    * @return {Promise<Object>} taxRate object response
    */
-  async getTaxRate(id: string): Promise<object> {
+  async getTaxRate(id: string | number): Promise<object> {
     return await this.read('taxRate', id);
   }
 
@@ -281,7 +281,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - term's ID to be retrieved.
    * @return {Promise<Object>} term object response
    */
-  async getTerm(id: string): Promise<object> {
+  async getTerm(id: string | number): Promise<object> {
     return await this.read('term', id);
   }
 
@@ -291,7 +291,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - timeActivity's ID to be retrieved.
    * @return {Promise<Object>} timeActivity object response
    */
-  async getTimeActivity(id: string): Promise<object> {
+  async getTimeActivity(id: string | number): Promise<object> {
     return await this.read('timeActivity', id);
   }
 
@@ -301,7 +301,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - vendor's ID to be retrieved.
    * @return {Promise<Object>} vendor object response
    */
-  async getVendor(id: string): Promise<object> {
+  async getVendor(id: string | number): Promise<object> {
     return await this.read('vendor', id);
   }
 
@@ -311,7 +311,7 @@ export class ResponseQB extends CreateQB {
    * @param {String} id - vendorCredit's ID to be retrieved.
    * @return {Promise<Object>} vendorCredit object response
    */
-  async getVendorCredit(id: string): Promise<object> {
+  async getVendorCredit(id: string | number): Promise<object> {
     return await this.read('vendorCredit', id);
   }
 }

@@ -120,7 +120,7 @@ export class QuickBooksBase implements QuickbooksConfig {
    */
   async delete(
     entityName: string,
-    idOrEntity: object | string
+    idOrEntity: object | string | number
   ): Promise<object> {
     let url = path.posix.join('/', entityName.toLowerCase());
     let params = { operation: 'delete' };
@@ -344,7 +344,7 @@ export class QuickBooksBase implements QuickbooksConfig {
    * @param {String} id
    * @returns {Promise<Object>}
    */
-  async read(entityName: string, id: string): Promise<object> {
+  async read(entityName: string, id: string | number): Promise<object> {
     let url = path.posix.join('/', entityName.toLowerCase(), String(id));
     let response = (await this.request(url, {
       method: 'get',
@@ -361,7 +361,7 @@ export class QuickBooksBase implements QuickbooksConfig {
    */
   async getEntity(
     entityName: string,
-    idOrEntity: object | string
+    idOrEntity: object | string | number
   ): Promise<object> {
     if (isObject(idOrEntity)) return idOrEntity;
     return await this.read(entityName, idOrEntity);
