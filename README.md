@@ -4,7 +4,7 @@ nodejs client for Intuit's [QuickBooks API] [1]
 
 ## Installation
 
-`npm install node-quickbooks`
+`npm i quickbookslib-ts`
 
 ## Documentation
 
