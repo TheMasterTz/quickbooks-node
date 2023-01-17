@@ -1,5 +1,5 @@
 {
-  "version": "0.1.5",
+  "version": "0.1.8",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -19,6 +19,10 @@
     "hooks": {
       "pre-commit": "tsdx lint"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheMasterTz/quickbooks-node"
   },
   "prettier": {
     "printWidth": 80,
