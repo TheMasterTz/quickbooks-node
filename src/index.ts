@@ -1,4 +1,4 @@
-import { ResponseQB as Quickbooks } from "./methods/Response.class";
+import { ReportsQB as Quickbooks } from "./methods/Report.class";
 import { QuickbooksConfig, optionsType, entityType } from "./types/quickbooks.types";
 
 export default Quickbooks;
