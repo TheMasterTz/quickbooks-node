@@ -1,6 +1,6 @@
-import { UpdateQB } from './Update.class';
+import { CreateQB } from './Create.class';
 
-export class DeleteQB extends UpdateQB {
+export class DeleteQB extends CreateQB {
   /**
    * Remove Attachable entity from QuickBooks
    *

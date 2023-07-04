@@ -1,4 +1,4 @@
-import { ReportsQB as Quickbooks } from "./methods/Report.class";
+import { UpdateQB as Quickbooks } from "./methods/Update.class";
 import { QuickbooksConfig, optionsType, entityType } from "./types/quickbooks.types";
 
 export default Quickbooks;

@@ -1,6 +1,6 @@
-import { CreateQB } from './Create.class';
+import { ReportsQB } from "./Report.class";
 
-export class ResponseQB extends CreateQB {
+export class ResponseQB extends ReportsQB {
   async getAccount(id: string | number): Promise<object> {
     return await this.read('account', id);
   }
