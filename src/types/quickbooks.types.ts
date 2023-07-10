@@ -13,7 +13,8 @@ export interface optionsType {
   params?: object;
 }
 
-export interface entityType extends QuickbooksConfig {
+export interface entityType {
   allowDuplicateDocNum?: boolean;
   requestId?: string;
+  [key: string]: any;
 }
